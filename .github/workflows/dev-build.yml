@@ -59,6 +59,7 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: containers/${{ matrix.tags }}/Dockerfile
+          verbose: true
   dockerfile-build:
     runs-on: ubuntu-latest
     name: dockerfile-build
