@@ -41,6 +41,22 @@ jobs:
         with:
           filters: ".github/tags.yml"
           token: ""
+  dockerfile-lint:
+    runs-on: ubuntu-latest
+    name: dockerfile-lint
+    needs: [dockerfile-changes]
+    if: needs.dockerfile-changes.outputs.docker-images != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        tags: ["${{ fromJson(needs.dockerfile-changes.outputs.docker-images) }}"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: containers/${{ matrix.tags }}/Dockerfile
   dockerfile-build:
     runs-on: ubuntu-latest
     name: dockerfile-build
