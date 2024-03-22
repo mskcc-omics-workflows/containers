@@ -43,9 +43,9 @@ jobs:
         with:
           filters: ".github/tags.yml"
           token: ""
-  dockerfile-lint:
+  dockerfile-validate-build:
     runs-on: ubuntu-latest
-    name: dockerfile-lint
+    name: dockerfile-build
     needs: [dockerfile-changes]
     if: needs.dockerfile-changes.outputs.docker-images != '[]'
     strategy:
@@ -60,18 +60,16 @@ jobs:
         with:
           dockerfile: containers/${{ matrix.tags }}/Dockerfile
           verbose: true
-  dockerfile-build:
-    runs-on: ubuntu-latest
-    name: dockerfile-build
-    needs: [dockerfile-changes]
-    if: needs.dockerfile-changes.outputs.docker-images != '[]'
-    strategy:
-      fail-fast: false
-      matrix:
-        tags: ["${{ fromJson(needs.dockerfile-changes.outputs.docker-images) }}"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
+        with:
+          python-version: "3.11"
+      - name: Get docker repo name
+        id: docker_repo_name
+        run: echo name=$( dirname "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker version
+        id: docker_repo_version
+        run: echo version=$( basename "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -82,12 +80,6 @@ jobs:
           registry: mskcc.jfrog.io
           username: ${{ secrets.MSK_JFROG_USERNAME }}
           password: ${{ secrets.MSK_JFROG_TOKEN }}
-      - name: Get docker repo name
-        id: docker_repo_name
-        run: echo name=$( dirname "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
-      - name: Get docker version
-        id: docker_repo_version
-        run: echo version=$( basename "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
       - name: Build Docker
         uses: docker/build-push-action@v5
         with:
@@ -95,10 +87,17 @@ jobs:
           file: containers/${{ matrix.tags }}/Dockerfile
           load: true
           tags: ${{ env.REGISTRY }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
+      - name: Install pip
+        run: python -m pip install --upgrade pip
+      - name: Install python docker package
+        run : pip install docker
+      - name: Validate docker
+        run: |
+          python .github/validate_docker.py ${image_name} .github/jsonschema/docker_image.json
       - name: Test image
         run: |
           docker run --rm ${{ env.REGISTRY }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
-      - name: Export to Docker
+      - name: Push build to registry
         uses: docker/build-push-action@v5
         with:
           context: containers/${{ matrix.tags }}/
