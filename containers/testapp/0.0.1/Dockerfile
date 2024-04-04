@@ -9,7 +9,8 @@ LABEL org.opencontainers.image.created="2020-12-16T15:55:35Z" \
 	org.opencontainers.image.licenses="test-license" \
 	org.opencontainers.image.source="https://github.com/mskcc-omics-workflows/containers/containers/testapp/" \
     org.opencontainers.image.url="https://github.com/mskcc-omics-workflows/containers/" \
-    org.opencontainers.image.title="My test app"
+    org.opencontainers.image.title="My test app" \
+    org.opencontainers.image.description="My test app description"
 
 
 
