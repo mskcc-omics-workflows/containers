@@ -30,27 +30,18 @@
                             "type": "string",
                             "pattern":"^(?:http://|https://|www\\.).*"
                         },
-                        "org\\.opencontainers\\.image\\.documentation(\\..*)?": {"type": "string"},
-                        "org\\.opencontainers\\.image\\.source(\\..*)?": {"type": "string"},
-                        "org\\.opencontainers\\.image\\.version(\\..*)?": {"type": "string"},
-                        "org\\.opencontainers\\.image\\.revision(\\..*)?": {"type": "string"},
-                        "org\\.opencontainers\\.image\\.vendor(\\..*)?": {"type": "string"},
-                        "org\\.opencontainers\\.image\\.licenses(\\..*)?": {"type": "string"},
-                        "org\\.opencontainers\\.image\\.ref\\.name(\\..*)?": {"type": "string"},
-                        "org\\.opencontainers\\.image\\.title(\\..*)?": {"type": "string"},
-                        "org\\.opencontainers\\.image\\.description(\\..*)?":{"type": "string"},
-                        "org\\.opencontainers\\.image\\.base\\.digest(\\..*)?":{"type": "string"},
-                        "org\\.opencontainers\\.image\\.base\\.name(\\..*)?": {"type": "string"}
+                        "org\\.opencontainers\\.image\\.documentation(\\..+)?": {"type": "string"},
+                        "org\\.opencontainers\\.image\\.source(\\..+)?": {"type": "string"},
+                        "org\\.opencontainers\\.image\\.version(\\..+)?": {"type": "string"},
+                        "org\\.opencontainers\\.image\\.revision(\\..+)?": {"type": "string"},
+                        "org\\.opencontainers\\.image\\.vendor(\\..+)?": {"type": "string"},
+                        "org\\.opencontainers\\.image\\.licenses(\\..+)?": {"type": "string"},
+                        "org\\.opencontainers\\.image\\.ref\\.name(\\..+)?": {"type": "string"},
+                        "org\\.opencontainers\\.image\\.title(\\..+)?": {"type": "string"},
+                        "org\\.opencontainers\\.image\\.description(\\..+)?":{"type": "string"},
+                        "org\\.opencontainers\\.image\\.base\\.digest(\\..+)?":{"type": "string"},
+                        "org\\.opencontainers\\.image\\.base\\.name(\\..+)?": {"type": "string"}
                     },
-                    "required": [
-                        "org.opencontainers.image.url",
-                        "org.opencontainers.image.created",
-                        "org.opencontainers.image.authors",
-                        "org.opencontainers.image.source",
-                        "org.opencontainers.image.version",
-                        "org.opencontainers.image.title",
-                        "org.opencontainers.image.description"
-                    ],
                     "additionalProperties": true              
                 }
             },
