@@ -90,7 +90,7 @@ jobs:
       - name: Install pip
         run: python -m pip install --upgrade pip
       - name: Install python docker package
-        run : pip install docker
+        run : pip install docker jsonschema
       - name: Validate docker
         run: |
           python .github/validate_docker.py ${{ env.REGISTRY }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}} .github/jsonschema/docker_image.json
