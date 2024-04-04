@@ -63,7 +63,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Get docker repo name
         id: docker_repo_name
         run: echo name=$( dirname "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
