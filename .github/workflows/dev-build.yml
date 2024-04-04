@@ -93,7 +93,7 @@ jobs:
         run : pip install docker
       - name: Validate docker
         run: |
-          python .github/validate_docker.py ${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}} .github/jsonschema/docker_image.json
+          python .github/validate_docker.py ${{ env.REGISTRY }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}} .github/jsonschema/docker_image.json
       - name: Test image
         run: |
           docker run --rm ${{ env.REGISTRY }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
