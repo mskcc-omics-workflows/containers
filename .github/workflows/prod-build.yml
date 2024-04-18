@@ -104,6 +104,8 @@ jobs:
           file: containers/${{ matrix.tags }}/Dockerfile
           tags: ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
           push: true
+      - name: Log in to GHCR registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Build and push Docker to GHCR
         uses: docker/build-push-action@v5
         with:
