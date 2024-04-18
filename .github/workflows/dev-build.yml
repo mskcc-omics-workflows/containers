@@ -10,7 +10,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  REGISTRY: mskcc.jfrog.io/omicswf-docker-dev-local/mskcc-omics-workflows
+  JFROG_REGISTRY: mskcc.jfrog.io
+  JFROG_CONTAINER_REPO: mskcc.jfrog.io/omicswf-docker-prod-local/mskcc-omics-workflows
+  GHCR_CONTAINER_REPO: ghcr.io/mskcc-omics-workflows/
 
 jobs:
   dockerfile-changes:
@@ -80,29 +82,29 @@ jobs:
           registry: mskcc.jfrog.io
           username: ${{ secrets.MSK_JFROG_USERNAME }}
           password: ${{ secrets.MSK_JFROG_TOKEN }}
-      - name: Build Docker
+      - name: Build Docker Jfrog
         uses: docker/build-push-action@v5
         with:
           context: containers/${{ matrix.tags }}/
           file: containers/${{ matrix.tags }}/Dockerfile
           load: true
-          tags: ${{ env.REGISTRY }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
+          tags: ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
       - name: Install pip
         run: python -m pip install --upgrade pip
       - name: Install python docker package
         run : pip install docker jsonschema
       - name: Validate docker
         run: |
-          python .github/validate_docker.py ${{ env.REGISTRY }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}} .github/jsonschema/docker_image.json
+          python .github/validate_docker.py ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}} .github/jsonschema/docker_image.json
       - name: Test image
         run: |
-          docker run --rm ${{ env.REGISTRY }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
+          docker run --rm ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
       - name: Push build to registry
         uses: docker/build-push-action@v5
         with:
           context: containers/${{ matrix.tags }}/
           file: containers/${{ matrix.tags }}/Dockerfile
-          tags: ${{ env.REGISTRY }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
+          tags: ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
           push: true
   confirm-pass:
     runs-on: ubuntu-latest
