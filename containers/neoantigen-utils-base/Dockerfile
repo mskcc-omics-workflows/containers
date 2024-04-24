@@ -39,7 +39,7 @@ RUN set -xe && apt-get update \
     # Install vcflib
     && git clone https://github.com/Sentieon/vcflib.git /usr/bin/vcflib/ \
     # Upgrade pip
-    && python3 -m pip install --upgrade pip \
+    && python3 -m pip install --no-cache-dir --upgrade pip==24.0 \
     && pip3 install --no-cache-dir numpy==1.24.4 \
     && pip3 install --no-cache-dir pandas==2.0.3 \
     # Clean up
