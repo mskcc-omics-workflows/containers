@@ -7,7 +7,7 @@ LABEL   org.opencontainers.image.url="https://github.com/mskcc/lohhla/releases/t
 	org.opencontainers.image.authors="Yixiao Gong (gongy@mskcc.com), John orgera (orgeraj@mskcc.com), " \
 	org.opencontainers.image.source="10.1016/j.cell.2017.10.001" \
 	org.opencontainers.image.version=${LOHHLA_VERSION} \
-	org.opencontainers.image.title="LOHHLA" \
+	org.opencontainers.image.title="lohhla" \
 	org.opencontainers.image.description="This container provides an environment to run version ${LOHHLA_VERSION} of LOHHLA.  LOHHLA is a tool that analyzes Loss of Heterozygosity of the HLA Alleles.  LOHHLA works on HLA-A, B, and C." 
 
 
