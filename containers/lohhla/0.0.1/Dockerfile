@@ -22,5 +22,5 @@ RUN wget -q https://github.com/mskcc/lohhla/archive/${LOHHLA_VERSION}.zip && unz
 RUN rm -rf /lohhla/example-file/
 
 WORKDIR /lohhla
-RUN wget -q https://raw.githubusercontent.com/jason-weirather/hla-polysolver/master/data/abc_complete.fasta && mv abc_complete.fasta /lohhla/data/
+#RUN wget -q https://raw.githubusercontent.com/jason-weirather/hla-polysolver/master/data/abc_complete.fasta && mv abc_complete.fasta /lohhla/data/
 
