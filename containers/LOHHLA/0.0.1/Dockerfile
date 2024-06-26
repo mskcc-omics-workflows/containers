@@ -17,8 +17,8 @@ WORKDIR /
 
 RUN rm -rf /lohhla
 
-RUN wget https://github.com/mskcc/lohhla/archive/${LOHHLA_VERSION}.zip && unzip ${LOHHLA_VERSION}.zip && mv /lohhla-${LOHHLA_VERSION} /lohhla
+RUN wget -q https://github.com/mskcc/lohhla/archive/${LOHHLA_VERSION}.zip && unzip ${LOHHLA_VERSION}.zip && mv /lohhla-${LOHHLA_VERSION} /lohhla
 
 WORKDIR /lohhla
-RUN wget https://raw.githubusercontent.com/jason-weirather/hla-polysolver/master/data/abc_complete.fasta && mv abc_complete.fasta /lohhla/data/
+RUN wget -q https://raw.githubusercontent.com/jason-weirather/hla-polysolver/master/data/abc_complete.fasta && mv abc_complete.fasta /lohhla/data/
 
