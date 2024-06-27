@@ -56,10 +56,16 @@ jobs:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 2048
-          temp-reserve-mb: 1024
-          swap-size-mb: 1024
+          root-reserve-mb: 512
+          temp-reserve-mb: 32
+          swap-size-mb: 32
           remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          build-mount-path: '/var/lib/docker/'
+      - name: Restart docker
+        run: sudo service docker restart
       - name: Checkout
         uses: actions/checkout@v4
       - name: Hadolint
