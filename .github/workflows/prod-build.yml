@@ -59,6 +59,7 @@ jobs:
           root-reserve-mb: 512
           swap-size-mb: 1024
           remove-dotnet: 'true'
+          overprovision-lvm: 'true'
       - name: Checkout
         uses: actions/checkout@v4
       - name: Hadolint
