@@ -59,9 +59,9 @@ jobs:
         uses: easimon/maximize-build-space@master
         with:
           root-reserve-mb: 512
+          temp-reserve-mb: 1024
           swap-size-mb: 1024
           remove-dotnet: 'true'
-          overprovision-lvm: 'true'
       - name: Checkout
         uses: actions/checkout@v4
       - name: Hadolint
