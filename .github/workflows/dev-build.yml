@@ -69,7 +69,12 @@ jobs:
           remove-haskell: 'true'
           remove-codeql: 'true'
       - name: Restore /var/lib/docker/
-        run: sudo sh -c "mv ${GITHUB_WORKSPACE}/docker/* /var/lib/docker"
+        run: |
+          du -bsh "${GITHUB_WORKSPACE}/docker/"
+          du -bsh /var/lib/docker
+          ls "${GITHUB_WORKSPACE}/docker/"
+          ls /var/lib/docker
+          sudo sh -c "mv ${GITHUB_WORKSPACE}/docker/* /var/lib/docker"
       - name: Checkout
         uses: actions/checkout@v4
       - name: Hadolint
