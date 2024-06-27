@@ -71,7 +71,8 @@ jobs:
           sudo du -bsh /var/lib/docker
           sudo ls "${GITHUB_WORKSPACE}/docker/"
           sudo ls /var/lib/docker
-          sudo sh -c "mv ${GITHUB_WORKSPACE}/docker/* /var/lib/docker"
+          sudo rm -rf /var/lib/docker
+          sudo mv ${GITHUB_WORKSPACE}/docker/ /var/lib/docker
       - name: Checkout
         uses: actions/checkout@v4
       - name: Hadolint
