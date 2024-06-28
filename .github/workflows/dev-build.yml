@@ -47,6 +47,7 @@ jobs:
       - uses: mirpedrol/paths-filter@main
         id: filter
         with:
+          base: ${{github.ref}}
           filters: ".github/tags.yml"
           token: ""
   dockerfile-lint:
@@ -78,8 +79,10 @@ jobs:
     steps:
       # save docker files
       - name: Move /var/lib/docker/
+        if: ${{ !github.event.act }}
         run: sudo mv /var/lib/docker/ "${GITHUB_WORKSPACE}/docker"
       - name: Maximize build space
+        if: ${{ !github.event.act }}
         uses: easimon/maximize-build-space@master
         with:
           build-mount-path: /var/lib/docker/
@@ -88,6 +91,7 @@ jobs:
           remove-haskell: 'true'
           remove-codeql: 'true'
       - name: Restore /var/lib/docker/
+        if: ${{ !github.event.act }}
         run: |
           sudo rsync -aPq "${GITHUB_WORKSPACE}/docker/" /var/lib/docker
           sudo rm -rf "${GITHUB_WORKSPACE}/docker"

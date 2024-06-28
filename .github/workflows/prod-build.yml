@@ -46,6 +46,7 @@ jobs:
       - uses: mirpedrol/paths-filter@main
         id: filter
         with:
+          base: ${{github.ref}}
           filters: ".github/tags.yml"
           token: ""
   dockerfile-validate-build:
@@ -135,7 +136,7 @@ jobs:
   confirm-pass:
     runs-on: ubuntu-latest
     needs: [ dockerfile-changes, dockerfile-validate-build ]
-    if: always()
+    if: always() & ${{ !github.event.act }}
     steps:
       - name: All tests ok
         if: ${{ success() || !contains(needs.*.result, 'failure') }}
