@@ -55,6 +55,19 @@ jobs:
       matrix:
         tags: ["${{ fromJson(needs.dockerfile-changes.outputs.docker-images) }}"]
     steps:
+      # save hadolint-action docker image, which for whatever reason builds before other steps
+      - name: Move /var/lib/docker/
+        run: sudo mv /var/lib/docker/ "${GITHUB_WORKSPACE}/docker"
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          build-mount-path: /var/lib/docker/
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+      - name: Restore /var/lib/docker/
+        run: sudo sh -c "mv ${GITHUB_WORKSPACE}/docker/* /var/lib/docker"
       - name: Checkout
         uses: actions/checkout@v4
       - name: Hadolint
@@ -76,13 +89,13 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Login to Docker Hub
+      - name: Login to JFrog
         uses: docker/login-action@v3
         with:
           registry: ${{ env.JFROG_REGISTRY }}
           username: ${{ secrets.MSK_JFROG_USERNAME }}
           password: ${{ secrets.MSK_JFROG_TOKEN }}
-      - name: Build Docker Jfrog
+      - name: Build Image for JFrog
         uses: docker/build-push-action@v5
         with:
           context: containers/${{ matrix.tags }}/
@@ -93,13 +106,13 @@ jobs:
         run: python -m pip install --upgrade pip
       - name: Install python docker package
         run : pip install docker jsonschema
-      - name: Validate docker
+      - name: Validate image build metadata
         run: |
           python .github/validate_docker.py ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}} .github/jsonschema/docker_image.json
-      - name: Test image
+      - name: Test JFrog image build
         run: |
           docker run --rm ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
-      - name: Push build to registry
+      - name: Push image build to JFrog registry
         uses: docker/build-push-action@v5
         with:
           context: containers/${{ matrix.tags }}/
