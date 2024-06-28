@@ -73,7 +73,9 @@ jobs:
       - name: Stop docker
         run: sudo service docker stop
       - name: Restore /var/lib/docker/
-        run: sudo sh -c "for i in ${GITHUB_WORKSPACE}/docker/* ; do echo \$i ; mv \$i /var/lib/docker/ ;done"
+        run: |
+          sudo rm -rf /var/lib/docker/
+          sudo mv "${GITHUB_WORKSPACE}/docker" /var/lib/docker/
       - name: Restart docker
         run: sudo service docker restart
       - name: Checkout
