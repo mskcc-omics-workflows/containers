@@ -42,3 +42,11 @@ LABEL \
     org.opencontainers.image.version.abra2=${ABRA2_VERSION}
 ```
 It is also acceptable to use no extension.
+
+#### Created Date
+
+The `org.opencontainers.image.created` label should be used to timestamp the image as accurately as possible. The value should match the following regular expression:
+```
+"^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])(?:T([01][0-9]|2[0-3])(:[0-5][0-9])(:[0-5][0-9])(?:\\.[0-9]+)?Z?)?$"
+```
+For example: `"2020-12-16T15:55:35Z"`. 
