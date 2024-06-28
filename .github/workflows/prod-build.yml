@@ -15,6 +15,7 @@ env:
 jobs:
   dockerfile-changes:
     name: dockerfile-changes
+    if: ${{ !github.event.act }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
