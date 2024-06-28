@@ -45,7 +45,24 @@ jobs:
         with:
           filters: ".github/tags.yml"
           token: ""
-  dockerfile-validate-build:
+  dockerfile-lint:
+    runs-on: ubuntu-latest
+    name: dockerfile-lint
+    needs: [dockerfile-changes]
+    if: needs.dockerfile-changes.outputs.docker-images != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        tags: ["${{ fromJson(needs.dockerfile-changes.outputs.docker-images) }}"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: containers/${{ matrix.tags }}/Dockerfile
+          verbose: true
+  docker-validate-build:
     runs-on: ubuntu-latest
     name: dockerfile-build
     needs: [dockerfile-changes]
@@ -70,11 +87,6 @@ jobs:
         run: sudo sh -c "mv ${GITHUB_WORKSPACE}/docker/* /var/lib/docker"
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Hadolint
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: containers/${{ matrix.tags }}/Dockerfile
-          verbose: true
       - name: Set up Python
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
         with:
@@ -121,7 +133,7 @@ jobs:
           push: true
   confirm-pass:
     runs-on: ubuntu-latest
-    needs: [ dockerfile-changes, dockerfile-validate-build ]
+    needs: [ dockerfile-changes, docker-validate-build, dockerfile-lint ]
     if: always()
     steps:
       - name: All tests ok
