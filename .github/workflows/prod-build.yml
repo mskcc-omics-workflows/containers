@@ -46,7 +46,7 @@ jobs:
       - uses: mirpedrol/paths-filter@main
         id: filter
         with:
-          base: ${{github.ref}}
+          base: "main"
           filters: ".github/tags.yml"
           token: ""
   dockerfile-validate-build:
