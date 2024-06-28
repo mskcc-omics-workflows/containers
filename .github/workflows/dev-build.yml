@@ -70,14 +70,10 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
-      - name: Stop docker
-        run: sudo service docker stop
       - name: Restore /var/lib/docker/
         run: |
-          sudo rm -rf /var/lib/docker/
-          sudo mv "${GITHUB_WORKSPACE}/docker" /var/lib/docker/
-      - name: Restart docker
-        run: sudo service docker restart
+          sudo rsync -aPq ${GITHUB_WORKSPACE}/docker/ /var/lib/docker
+          sudo rm -rf ${GITHUB_WORKSPACE}/docker
       - name: Checkout
         uses: actions/checkout@v4
       - name: Hadolint
