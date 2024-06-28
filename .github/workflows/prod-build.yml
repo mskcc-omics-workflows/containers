@@ -30,12 +30,16 @@ jobs:
       - name: Create tags.yml to grab changes
         id: get_tags
         run: |
-          for i in $(find containers -name "Dockerfile")
+          for i in $(find containers -name "Dockerfile" -not -path "containers/testapp/0.0.2/*")
           do
           path=$(dirname $i)
           tag=$(echo $path | cut -f 2- -d/)
           echo -e "$tag:\n  $path/**"
           done > .github/tags.yml
+      - name: Add to tags.yml to grab changes in testapp/0.0.2 and github action workflows
+        id: add_testapp_002_tag
+        run: |
+          echo -e "testapp/0.0.2:\n  - testapp/0.0.2/**\n  - .github/workflows/**" >> .github/tags.yml
       - name: debug
         run: cat .github/tags.yml
       - uses: mirpedrol/paths-filter@main
