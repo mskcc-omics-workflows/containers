@@ -76,9 +76,9 @@ jobs:
       matrix:
         tags: ["${{ fromJson(needs.dockerfile-changes.outputs.docker-images) }}"]
     steps:
-      # save hadolint-action docker image, which for whatever reason builds before other steps
-      #- name: Move /var/lib/docker/
-      #  run: sudo mv /var/lib/docker/ "${GITHUB_WORKSPACE}/docker"
+      # save docker files
+      - name: Move /var/lib/docker/
+        run: sudo mv /var/lib/docker/ "${GITHUB_WORKSPACE}/docker"
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
@@ -87,10 +87,10 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
-      #- name: Restore /var/lib/docker/
-      #  run: |
-      #    sudo rsync -aPq "${GITHUB_WORKSPACE}/docker/" /var/lib/docker
-      #    sudo rm -rf "${GITHUB_WORKSPACE}/docker"
+      - name: Restore /var/lib/docker/
+        run: |
+          sudo rsync -aPq "${GITHUB_WORKSPACE}/docker/" /var/lib/docker
+          sudo rm -rf "${GITHUB_WORKSPACE}/docker"
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up Python
