@@ -3,7 +3,7 @@ FROM cmopipeline/lohhla:1.1.3
 ENV LOHHLA_VERSION 1.1.7
 
 LABEL   org.opencontainers.image.url="https://github.com/mskcc/lohhla/releases/tag/1.1.7" \
-	org.opencontainers.image.created="6/26/24" \
+	org.opencontainers.image.created="2024-06-26" \
 	org.opencontainers.image.authors="Yixiao Gong (gongy@mskcc.com), John orgera (orgeraj@mskcc.com), " \
 	org.opencontainers.image.source="10.1016/j.cell.2017.10.001" \
 	org.opencontainers.image.version=${LOHHLA_VERSION} \
@@ -22,5 +22,5 @@ RUN wget -q https://github.com/mskcc/lohhla/archive/${LOHHLA_VERSION}.zip && unz
 RUN rm -rf /lohhla/example-file/
 
 WORKDIR /lohhla
-#RUN wget -q https://raw.githubusercontent.com/jason-weirather/hla-polysolver/master/data/abc_complete.fasta && mv abc_complete.fasta /lohhla/data/
+RUN wget -q https://raw.githubusercontent.com/jason-weirather/hla-polysolver/master/data/abc_complete.fasta && mv abc_complete.fasta /lohhla/data/
 
