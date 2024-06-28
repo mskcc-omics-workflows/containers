@@ -72,8 +72,8 @@ jobs:
           remove-codeql: 'true'
       - name: Restore /var/lib/docker/
         run: |
-          sudo rsync -aPq ${GITHUB_WORKSPACE}/docker/ /var/lib/docker
-          sudo rm -rf ${GITHUB_WORKSPACE}/docker
+          sudo rsync -aPq "${GITHUB_WORKSPACE}/docker/" /var/lib/docker
+          sudo rm -rf "${GITHUB_WORKSPACE}/docker"
       - name: Checkout
         uses: actions/checkout@v4
       - name: Hadolint
