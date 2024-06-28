@@ -53,6 +53,7 @@ jobs:
       matrix:
         tags: ["${{ fromJson(needs.dockerfile-changes.outputs.docker-images) }}"]
     steps:
+      # save hadolint-action docker image, which for whatever reason builds before other steps
       - name: Move /var/lib/docker/
         run: sudo mv /var/lib/docker "${GITHUB_WORKSPACE}/docker"
       - name: Maximize build space
