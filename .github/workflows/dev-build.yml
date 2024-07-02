@@ -11,7 +11,7 @@ concurrency:
 
 env:
   JFROG_REGISTRY: mskcc.jfrog.io
-  JFROG_CONTAINER_REPO: mskcc.jfrog.io/omicswf-docker-prod-local/mskcc-omics-workflows
+  JFROG_CONTAINER_REPO: mskcc.jfrog.io/omicswf-docker-dev-local/mskcc-omics-workflows
   GHCR_CONTAINER_REPO: ghcr.io/mskcc-omics-workflows/
 
 jobs:
