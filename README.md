@@ -42,3 +42,15 @@ LABEL \
     org.opencontainers.image.version.abra2=${ABRA2_VERSION}
 ```
 It is also acceptable to use no extension.
+
+## Testing image build locally
+
+The Github Actions dev workflow has been configured to run locally with [act](https://github.com/nektos/act) (although it is not required to contribute to the repository, as the workflow will also be executed by a Github Action Runner). Here is a sample command:
+```
+act \
+    -s MSK_JFROG_USERNAME=<jfrogusername> \
+    -s MSK_JFROG_TOKEN=<jfrogtoken> \
+    -s GITHUB_TOKEN=<personalgithubtoken> \
+    --workflows .github/workflows/dev-build.yml
+```
+The `-s` parameters indicate "secrets" that are needed in the environment of the workflow. Certain steps may fail without them. Currently only `.github/workflows/dev-build.yml` has been properly enabled with `act`, but `.github/workflows/prod-build.yml` is not.
