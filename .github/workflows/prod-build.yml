@@ -44,7 +44,7 @@ jobs:
       - name: Add to tags.yml to grab changes in testapp/0.0.2 and github action workflows
         id: add_testapp_002_tag
         run: |
-          echo -e "testapp/0.0.2:\n  - testapp/0.0.2/**\n  - .github/workflows/**" >> .github/tags.yml
+          echo -e "testapp/0.0.2:\n  - testapp/0.0.2/**\n  - .github/workflows/**\n  - .hadolint.yml" >> .github/tags.yml
       - name: debug
         run: cat .github/tags.yml
       - uses: mirpedrol/paths-filter@main
