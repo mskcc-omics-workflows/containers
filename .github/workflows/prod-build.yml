@@ -15,6 +15,7 @@ env:
 jobs:
   dockerfile-changes:
     name: dockerfile-changes
+    if: ${{ !github.event.act }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
@@ -22,6 +23,10 @@ jobs:
       # Expose matched filters as job 'docker-images' output variable
       docker-images: ${{ steps.filter.outputs.changes }}
     steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
@@ -30,22 +35,27 @@ jobs:
       - name: Create tags.yml to grab changes
         id: get_tags
         run: |
-          for i in $(find containers -name "Dockerfile")
+          for i in $(find containers -name "Dockerfile" -not -path "containers/testapp/0.0.2/*")
           do
           path=$(dirname $i)
           tag=$(echo $path | cut -f 2- -d/)
           echo -e "$tag:\n  $path/**"
           done > .github/tags.yml
+      - name: Add to tags.yml to grab changes in testapp/0.0.2 and github action workflows
+        id: add_testapp_002_tag
+        run: |
+          echo -e "testapp/0.0.2:\n  - testapp/0.0.2/**\n  - .github/workflows/**\n  - .hadolint.yml" >> .github/tags.yml
       - name: debug
         run: cat .github/tags.yml
       - uses: mirpedrol/paths-filter@main
         id: filter
         with:
+          base: "main"
           filters: ".github/tags.yml"
           token: ""
-  dockerfile-validate-build:
+  dockerfile-lint:
     runs-on: ubuntu-latest
-    name: dockerfile-build
+    name: dockerfile-lint
     needs: [dockerfile-changes]
     if: needs.dockerfile-changes.outputs.docker-images != '[]'
     strategy:
@@ -60,6 +70,33 @@ jobs:
         with:
           dockerfile: containers/${{ matrix.tags }}/Dockerfile
           verbose: true
+  docker-validate-build:
+    runs-on: ubuntu-latest
+    name: dockerfile-build
+    needs: [dockerfile-changes]
+    if: needs.dockerfile-changes.outputs.docker-images != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        tags: ["${{ fromJson(needs.dockerfile-changes.outputs.docker-images) }}"]
+    steps:
+      # save docker files
+      - name: Move /var/lib/docker/
+        run: sudo mv /var/lib/docker/ "${GITHUB_WORKSPACE}/docker"
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          build-mount-path: /var/lib/docker/
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+      - name: Restore /var/lib/docker/
+        run: |
+          sudo rsync -aPq "${GITHUB_WORKSPACE}/docker/" /var/lib/docker
+          sudo rm -rf "${GITHUB_WORKSPACE}/docker"
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
         with:
@@ -93,7 +130,7 @@ jobs:
         run : pip install docker jsonschema
       - name: Validate image build metadata
         run: |
-          python .github/validate_docker.py ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}} .github/jsonschema/docker_image.json
+          python .github/workflows/scripts/validate_docker.py ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}} .github/workflows/scripts/jsonschema/docker_image.json
       - name: Test JFrog image build
         run: |
           docker run --rm ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
@@ -116,8 +153,8 @@ jobs:
           push: true
   confirm-pass:
     runs-on: ubuntu-latest
-    needs: [ dockerfile-changes, dockerfile-validate-build ]
-    if: always()
+    needs: [ dockerfile-changes, docker-validate-build, dockerfile-lint ]
+    if: always() & ${{ !github.event.act }}
     steps:
       - name: All tests ok
         if: ${{ success() || !contains(needs.*.result, 'failure') }}
