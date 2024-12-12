@@ -35,16 +35,29 @@ RUN apt-get update && \
 	apt-get autoremove -y && \
 	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN wget --no-check-certificate "https://github.com/msk-access/GetBaseCountsMultiSample/archive/refs/tags/${GBCMS_VERSION}.tar.gz" && \
-	tar xzvf /usr/src/${GBCMS_VERSION}.tar.gz && \
-	cd /usr/src/GetBaseCountsMultiSample-${GBCMS_VERSION}/bamtools-master && \
-	rm -r build/ && \
-        mkdir build && \
-        cd build/ && \
-        cmake -DCMAKE_CXX_FLAGS=-std=c++03 .. && \
-        make && \
-        make install && \
-	cp ../lib/libbamtools.so.2.3.0 /usr/lib/ && \
-	cd /usr/src/GetBaseCountsMultiSample-${GBCMS_VERSION}/ && \
+
+WORKDIR /usr/src
+# Download and extract the tarball
+RUN wget -q --no-check-certificate "https://github.com/msk-access/GetBaseCountsMultiSample/archive/refs/tags/${GBCMS_VERSION}.tar.gz" && \
+	tar -xzvf ${GBCMS_VERSION}.tar.gz && \
+	rm ${GBCMS_VERSION}.tar.gz
+
+WORKDIR /usr/src/GetBaseCountsMultiSample-${GBCMS_VERSION}/bamtools-master
+
+# Clean, build, and install bamtools
+RUN rm -r build/ && \
+	mkdir build
+
+WORKDIR /usr/src/GetBaseCountsMultiSample-${GBCMS_VERSION}/bamtools-master/build
+
+RUN cmake -DCMAKE_CXX_FLAGS=-std=c++03 .. && \
 	make && \
+	make install && \
+	cp ../lib/libbamtools.so.2.3.0 /usr/lib/
+	
+# Switch to the main GetBaseCountsMultiSample directory
+WORKDIR /usr/src/GetBaseCountsMultiSample-${GBCMS_VERSION}
+# Build GetBaseCountsMultiSample
+RUN make && \
 	cp GetBaseCountsMultiSample /usr/local/bin/
+	
