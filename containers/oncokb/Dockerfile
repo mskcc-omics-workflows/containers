@@ -51,5 +51,5 @@ RUN wget -q https://github.com/oncokb/oncokb-annotator/archive/refs/tags/v${ONCO
     && mv oncokb-annotator-${ONCOKB_ANNOTATOR_VERSION}/* /usr/bin/oncokb/
     
 RUN python3 -m pip install --no-cache-dir --upgrade pip \
-    && pip3 install --no-cache-dir -r /usr/bin/oncokb/requirements/common.txt -r /usr/bin/oncokb/requirements/pip3.txt \
+    && pip3 install --no-cache-dir -r /usr/bin/oncokb/requirements/common.txt -r /usr/bin/oncokb/requirements/pip3.txt
     
