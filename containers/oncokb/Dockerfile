@@ -37,18 +37,19 @@ RUN set -xe && apt-get update \
     git \
     python3.8 \
     python3-pip \
-    g++ 
+    g++ \
+    # Clean up
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /usr/bin/oncokb/ 
 ENV PATH="/usr/bin/oncokb/:$PATH"
 
-RUN cd tmp && \
-    wget https://github.com/oncokb/oncokb-annotator/archive/refs/tags/v${ONCOKB_ANNOTATOR_VERSION}.zip \
+WORKDIR /tmp/
+RUN wget -q https://github.com/oncokb/oncokb-annotator/archive/refs/tags/v${ONCOKB_ANNOTATOR_VERSION}.zip \
     && unzip v${ONCOKB_ANNOTATOR_VERSION}.zip  \
     && mv oncokb-annotator-${ONCOKB_ANNOTATOR_VERSION}/* /usr/bin/oncokb/
     
 RUN python3 -m pip install --no-cache-dir --upgrade pip \
-    && pip3 install -r /usr/bin/oncokb/requirements/common.txt -r /usr/bin/oncokb/requirements/pip3.txt \
-    # Clean up
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && pip3 install --no-cache-dir -r /usr/bin/oncokb/requirements/common.txt -r /usr/bin/oncokb/requirements/pip3.txt \
+    
