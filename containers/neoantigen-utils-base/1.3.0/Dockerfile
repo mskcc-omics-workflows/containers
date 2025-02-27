@@ -42,7 +42,7 @@ RUN set -xe && apt-get update \
     && pip3 install --no-cache-dir pandas \
     # Install neosv
     && git clone https://github.com/pintoa1-mskcc/NeoSV.git /usr/bin/NeoSV/ \
-    && cd /usr/bin/NeoSV/ && python3 setup.py install \ 
+    && python3 /usr/bin/NeoSV/setup.py install \ 
     # Clean up
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
