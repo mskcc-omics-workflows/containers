@@ -9,6 +9,7 @@ ARG BUILD_VERSION="0.0.1"
 ARG LICENSE="MIT License"
 ARG VARDICTJAVA_VERSION=1.5.1
 ARG VCS_REF
+ENV DEBIAN_FRONTEND=noninteractive
 ################## METADATA ########################
 
 LABEL org.opencontainers.image.vendor="MSKCC"
@@ -27,8 +28,8 @@ LABEL org.opencontainers.image.title="VARDICTJAVA"\
 ################## INSTALL ##########################
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    openjdk-11-jdk \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-8-jdk \
     r-base \
     perl \
     curl \
@@ -40,26 +41,31 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Set JAVA_HOME environment variable
-ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
-ENV PATH=$JAVA_HOME/bin:$PATH
+# Detect Java 8 directory using ls and set JAVA_HOME + PATH
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+ENV PATH="$JAVA_HOME/bin:$PATH"
 
-# Install VarDictJava v1.5.1
+# # Install VarDictJava v1.5.1
 WORKDIR /opt
-RUN git clone --branch v1.5.1 https://github.com/AstraZeneca-NGS/VarDictJava.git \
+RUN git clone --recursive https://github.com/AstraZeneca-NGS/VarDictJava.git \
     && cd VarDictJava \
-    && gradle build
+    && git checkout v1.5.1 \ 
+    && ./gradlew clean installApp
 
-# Make VarDict and helpers accessible system-wide
-RUN ln -s /opt/VarDictJava/build/libs/VarDict.jar /usr/local/bin/VarDict.jar && \
-    echo -e '#!/bin/bash\njava -jar /usr/local/bin/VarDict.jar "$@"' > /usr/local/bin/vardict-java && \
-    chmod +x /usr/local/bin/vardict-java && \
-    ln -s /opt/VarDictJava/VarDict /usr/local/bin/VarDict
+# # Make VarDict and helpers accessible system-wide
+# Create a script for vardict-java to point to the actual executable
+WORKDIR /
+RUN printf '#!/bin/bash\n/opt/VarDictJava/build/install/VarDict/bin/VarDict "$@"' > /usr/local/bin/vardict-java && \
+    chmod +x /usr/local/bin/vardict-java
 
-# Link helper scripts with aliases
-RUN ln -s /opt/VarDictJava/var2vcf_valid.pl /usr/local/bin/var2vcf_valid.pl && \
-    ln -s /opt/VarDictJava/testsomatic.R /usr/local/bin/testsomatic.R && \
-    echo -e '#!/bin/bash\nperl /usr/local/bin/var2vcf_valid.pl "$@"' > /usr/local/bin/var2vcf_valid && \
-    chmod +x /usr/local/bin/var2vcf_valid && \
-    echo -e '#!/bin/bash\nRscript /usr/local/bin/testsomatic.R "$@"' > /usr/local/bin/testsomatic && \
-    chmod +x /usr/local/bin/testsomatic
+WORKDIR /opt
+# Symlink Perl script (var2vcf_valid.pl) and make it executable
+RUN printf '#!/bin/bash\n perl /opt/VarDictJava/VarDict/var2vcf_valid.pl "$@"' > /usr/local/bin/var2vcf_valid.pl && \
+    chmod +x /usr/local/bin/var2vcf_valid.pl
+
+WORKDIR /opt
+# Symlink R script (testsomatic.R) and make it executable
+RUN printf '#!/bin/bash\n Rscript /opt/VarDictJava/VarDict/testsomatic.R "$@"' > /usr/local/bin/testsomatic.R && \
+    chmod +x /usr/local/bin/testsomatic.R
+
+ENV PATH="/usr/local/bin:$PATH"
