@@ -28,7 +28,8 @@ LABEL org.opencontainers.image.title="VARDICTJAVA"\
 ################## INSTALL ##########################
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+WORKDIR /
+RUN apt-get update && apt-get install -y \
     openjdk-8-jdk \
     r-base \
     perl \
@@ -58,13 +59,13 @@ WORKDIR /
 RUN printf '#!/bin/bash\n/opt/VarDictJava/build/install/VarDict/bin/VarDict "$@"' > /usr/local/bin/vardict-java && \
     chmod +x /usr/local/bin/vardict-java
 
-WORKDIR /opt
 # Symlink Perl script (var2vcf_valid.pl) and make it executable
+WORKDIR /
 RUN printf '#!/bin/bash\n perl /opt/VarDictJava/VarDict/var2vcf_valid.pl "$@"' > /usr/local/bin/var2vcf_valid.pl && \
     chmod +x /usr/local/bin/var2vcf_valid.pl
 
-WORKDIR /opt
 # Symlink R script (testsomatic.R) and make it executable
+WORKDIR /
 RUN printf '#!/bin/bash\n Rscript /opt/VarDictJava/VarDict/testsomatic.R "$@"' > /usr/local/bin/testsomatic.R && \
     chmod +x /usr/local/bin/testsomatic.R
 
