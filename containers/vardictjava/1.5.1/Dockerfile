@@ -40,9 +40,10 @@ RUN apt-get update && \
 
 ################## INSTALL VARDICTJAVA ########################
 WORKDIR /opt
-RUN git clone --branch v${VARDICTJAVA_VERSION} --recurse-submodules https://github.com/AstraZeneca-NGS/VarDictJava.git && \
-    cd VarDictJava && \
-    ./gradlew clean installApp 
+RUN git clone --branch v${VARDICTJAVA_VERSION} --recurse-submodules https://github.com/AstraZeneca-NGS/VarDictJava.git
+
+WORKDIR /opt/VarDictJava/
+RUN ./gradlew clean installApp 
 
 ################## CREATE ALIASES ########################
 WORKDIR  /opt/VarDictJava/VarDict/
@@ -50,7 +51,7 @@ RUN chmod +x /opt/VarDictJava/VarDict/var2vcf_paired.pl \
     && chmod +x /opt/VarDictJava/VarDict/testsomatic.R
 ENV PATH="/opt/VarDictJava/VarDict/:$PATH"
 
-WORKDIR /opt/VarDictJava/VarDict
+WORKDIR /opt/VarDictJava/VarDict/
 RUN ln -s /opt/VarDictJava/build/install/VarDict/bin/VarDict /usr/local/bin/vardict-java 
 ENV PATH="/usr/local/bin:$PATH"
 
