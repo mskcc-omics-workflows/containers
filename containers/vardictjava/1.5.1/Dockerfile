@@ -45,16 +45,13 @@ RUN git clone --branch v${VARDICTJAVA_VERSION} --recurse-submodules https://gith
     ./gradlew clean installApp 
 
 ################## CREATE ALIASES ########################
-WORKDIR /usr/local/bin
-RUN echo '#!/bin/sh\n /opt/VarDictJava/build/install/VarDict/bin/VarDict "$@"' > vardict-java && \
-    chmod +x vardict-java && \
-    ln -s /opt/VarDictJava/VarDict/testsomatic.R testsomatic.R && \
-    ln -s /opt/VarDictJava/VarDict/var2vcf_valid.pl var2vcf_valid.pl && \
-    echo '#!/bin/sh\nRscript /opt/VarDictJava/VarDict/testsomatic.R "$@"' > /usr/local/bin/testsomatic && \
-    chmod +x /usr/local/bin/testsomatic && \
-    echo '#!/bin/sh\nperl /opt/VarDictJava/VarDict/var2vcf_valid.pl "$@"' > /usr/local/bin/var2vcf_valid && \
-    chmod +x /usr/local/bin/var2vcf_valid
+WORKDIR  /opt/VarDictJava/VarDict/
+RUN chmod +x /opt/VarDictJava/VarDict/var2vcf_paired.pl \
+    && chmod +x /opt/VarDictJava/VarDict/testsomatic.R
+ENV PATH="/opt/VarDictJava/VarDict/:$PATH"
 
+WORKDIR /opt/VarDictJava/VarDict
+RUN ln -s /opt/VarDictJava/build/install/VarDict/bin/VarDict /usr/local/bin/vardict-java 
 ENV PATH="/usr/local/bin:$PATH"
 
-WORKDIR /opt
+WORKDIR /opt/VarDictJava/VarDict/
