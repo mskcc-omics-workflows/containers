@@ -155,6 +155,7 @@ jobs:
           fi
       - name: Notify IMAGEPRIVACY
         id: privacy_message
+        if: steps.check_private.outputs.private_image == 'true'
         run: echo "This image is private"
   confirm-pass:
     runs-on: ubuntu-latest
