@@ -1,3 +1,26 @@
 ignored:
   - DL3008
   - DL3013
+
+failure-threshold: warning
+
+no-fail: false
+
+label-schema:
+  imageprivacy: text
+  org.opencontainers.image.vendor: text
+  org.opencontainers.image.authors: text
+  org.opencontainers.image.created: rfc3339
+  org.opencontainers.image.version: text
+  org.opencontainers.image.licenses: text
+  org.opencontainers.image.source: text
+  org.opencontainers.image.url: text
+  org.opencontainers.image.title: text
+  org.opencontainers.image.description: text
+
+override:
+  error:
+    - DL3048
+    - DL3050
+
+strict-labels: true
