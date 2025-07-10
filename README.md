@@ -43,6 +43,10 @@ LABEL \
 ```
 It is also acceptable to use no extension.
 
+The `imageprivacy` label is optional. When set to `"true"`, the image will not be pushed to the ghcr container registry. For all other values, the image will be pushed to the container registry when merged to main. See `containers/testappprivate` for an example.
+
+Superfluous labels will cause the Dockerfile linting to fail. Missing labels will produce an Info message, but will not trigger a failure. Test your local Dockerfile using `hadolint containers/<image>/<version>/Dockerfile` from the top-level folder of the git repo.
+
 #### Created Date
 
 The `org.opencontainers.image.created` label should be used to timestamp the image as accurately as possible. The value should match the following regular expression:
