@@ -10,7 +10,7 @@ LABEL org.opencontainers.image.source="https://github.com/mskcc-omics-workflows/
 LABEL org.opencontainers.image.url="https://github.com/mskcc-omics-workflows/containers/"
 LABEL org.opencontainers.image.title="My private test app"
 LABEL org.opencontainers.image.description="My private test app description"
-LABEL IMAGEPRIVACY="true"
+LABEL imageprivacy="true"
 
 
 

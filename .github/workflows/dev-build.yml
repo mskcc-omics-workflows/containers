@@ -148,12 +148,12 @@ jobs:
       - name: Get privacy tag
         id: check_private
         run: |
-          if [ $(docker image inspect ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}} | grep -ic "\"IMAGEPRIVACY\": \"true\"") -gt 0 ] ; then
+          if [ $(docker image inspect ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}} | grep -ic "\"imageprivacy\": \"true\"") -gt 0 ] ; then
             echo "private_image=true" >> $GITHUB_OUTPUT
           else
             echo "private_image=false" >> $GITHUB_OUTPUT
           fi
-      - name: Notify IMAGEPRIVACY
+      - name: Notify imageprivacy
         id: privacy_message
         if: steps.check_private.outputs.private_image == 'true'
         run: echo "This image is private"
