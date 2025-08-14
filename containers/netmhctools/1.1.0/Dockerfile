@@ -12,7 +12,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.description="Suite of Netmhctools for binding prediction"
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV NETMHC_PACKAGE=https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/netMHC.Linux.tar.gz"
+ENV NETMHC_PACKAGE=https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/netMHC.Linux.tar.gz
 ENV NETMHCTOOLS_TAG=1.1.0
 RUN --mount=type=secret,id=MSK_JFROG_USERNAME,env=MSK_JFROG_USERNAME \
       --mount=type=secret,id=MSK_JFROG_TOKEN,env=MSK_JFROG_TOKEN \
