@@ -44,7 +44,7 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
             psutil \
       # Download NetMHC binary
       && mkdir -p /tmp/netMHCTmp/ \
-      && wget --directory-prefix /tmp/netMHCTmp/ --user=${MSK_JFROG_USERNAME} --password=${MSK_JFROG_TOKEN} "https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/netMHC.Linux.tar.gz" \
+      && wget --progress=dot:giga --directory-prefix /tmp/netMHCTmp/ --user="${MSK_JFROG_USERNAME}" --password="${MSK_JFROG_TOKEN}" "https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/netMHC.Linux.tar.gz" \
       && tar -xvzf /tmp/netMHCTmp/netMHC.Linux.tar.gz -C /tmp/netMHCTmp/ \
       # Install netmhc 3.4
       && tar -xvzf /tmp/netMHCTmp/netMHC/netMHC-3.4.Linux.tar.gz -C /usr/local/bin/ \
@@ -52,7 +52,7 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
       # Install netmhcpan 4.1
       && mkdir -p /tmp/netMHCTmp/netMHCpan-4.1 \
       && tar -xvzf /tmp/netMHCTmp/netMHC/netMHCpan-4.1b.Linux.tar.gz -C /usr/local/bin/ \
-      && wget --directory-prefix /tmp/netMHCTmp/netMHCpan-4.1 "https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/data.tar.gz" \
+      && wget --progress=dot:giga --directory-prefix /tmp/netMHCTmp/netMHCpan-4.1 "https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/data.tar.gz" \
       && tar -zxvf /tmp/netMHCTmp/netMHCpan-4.1/data.tar.gz -C /usr/local/bin/netMHCpan-4.1/  \
       && sed -i 's|'/net/sund-nas.win.dtu.dk/storage/services/www/packages/netMHCpan/4.1/netMHCpan-4.1'|'/usr/local/bin/netMHCpan-4.1'|' /usr/local/bin/netMHCpan-4.1/netMHCpan \
       && sed -i '32c\setenv NETMHCpan /usr/local/bin/netMHCpan-4.1/Linux_x86_64' /usr/local/bin/netMHCpan-4.1/netMHCpan \
