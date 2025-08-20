@@ -15,8 +15,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV NETMHC_PACKAGE=https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/netMHC.Linux.tar.gz
 ENV NETMHCTOOLS_TAG=1.1.1
 
-RUN --mount=type=secret,id=MSK_JFROG_USERNAME,env=MSK_JFROG_USERNAME \
-      --mount=type=secret,id=MSK_JFROG_TOKEN,env=MSK_JFROG_TOKEN \
+RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
+      MSK_JFROG_USERNAME="$(cat /run/secrets/msk_jfrog_username)" \
+      export MSK_JFROG_USERNAME \
+      && --mount=type=secret,id=MSK_JFROG_TOKEN \
+      MSK_JFROG_TOKEN="$(cat /run/secrets/msk_jfrog_token)" \
+      export MSK_JFROG_TOKEN \
       set -xe && apt-get update -y \
       # Install packages
       && apt-get install --no-install-recommends -y \
