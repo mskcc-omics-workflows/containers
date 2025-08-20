@@ -4,8 +4,8 @@ FROM ubuntu:22.04
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="John Orgera (orgeraj@mskcc.org), Nikhil Kumar (kumarn1@mskcc.org)" \
       org.opencontainers.image.created="2025-08-20T11:07:00Z" \
+      org.opencontainers.image.licenses="ACADEMIC SOFTWARE LICENSE AGREEMENT" \
       org.opencontainers.image.version="1.1.1" \
-      org.opencontainers.image.version.python="3.10" \
       org.opencontainers.image.source="https://github.com/mskcc-omics-workflows/containers/containers/netmhctools/" \
       org.opencontainers.image.url="https://github.com/mskcc-omics-workflows/containers/" \
       org.opencontainers.image.title="Netmhctools" \
