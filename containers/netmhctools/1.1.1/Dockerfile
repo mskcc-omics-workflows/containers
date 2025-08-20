@@ -52,7 +52,7 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
       # Install netmhcpan 4.1
       && mkdir -p /tmp/netMHCTmp/netMHCpan-4.1 \
       && tar -xvzf /tmp/netMHCTmp/netMHC/netMHCpan-4.1b.Linux.tar.gz -C /usr/local/bin/ \
-      && wget --directory-prefix /tmp/netMHCTmp/netMHCpan-4 "https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/data.tar.gz" \
+      && wget --directory-prefix /tmp/netMHCTmp/netMHCpan-4.1 "https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/data.tar.gz" \
       && tar -zxvf /tmp/netMHCTmp/netMHCpan-4.1/data.tar.gz -C /usr/local/bin/netMHCpan-4.1/  \
       && sed -i 's|'/net/sund-nas.win.dtu.dk/storage/services/www/packages/netMHCpan/4.1/netMHCpan-4.1'|'/usr/local/bin/netMHCpan-4.1'|' /usr/local/bin/netMHCpan-4.1/netMHCpan \
       && sed -i '32c\setenv NETMHCpan /usr/local/bin/netMHCpan-4.1/Linux_x86_64' /usr/local/bin/netMHCpan-4.1/netMHCpan \
