@@ -132,7 +132,7 @@ jobs:
           tags: ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
           secrets: |
             MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
-            MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_USERNAME }}
+            MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
       - name: Install pip
         run: python -m pip install --upgrade pip
       - name: Install python docker package
@@ -151,7 +151,7 @@ jobs:
           tags: ${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}
           secrets: |
             MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
-            MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_USERNAME }}
+            MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
           push: true
       - name: Get privacy tag
         id: check_private
