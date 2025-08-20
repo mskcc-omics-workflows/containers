@@ -46,6 +46,8 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
       && mkdir -p /tmp/netMHCTmp/ \
       && wget --progress=dot:giga --directory-prefix /tmp/netMHCTmp/ --user="${MSK_JFROG_USERNAME}" --password="${MSK_JFROG_TOKEN}" "https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/netMHC.Linux.tar.gz" \
       && tar -xvzf /tmp/netMHCTmp/netMHC.Linux.tar.gz -C /tmp/netMHCTmp/ \
+      # Store Academic License
+      && cp /tmp/netMHCTmp/netMHCpan-4.2_license.txt /usr/local/ \
       # Install netmhc 3.4
       && tar -xvzf /tmp/netMHCTmp/netMHC/netMHC-3.4.Linux.tar.gz -C /usr/local/bin/ \
       && chmod -R 777 /usr/local/bin/netMHC-3.4/ \
