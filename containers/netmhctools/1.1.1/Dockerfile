@@ -35,9 +35,9 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
       wget \
       gawk \
       vim  \
-      && python3 -m pip install --upgrade pip \
+      && python3 -m pip install --no-cache-dir --upgrade pip \
       # Install python packages
-      && pip3 install \
+      && pip3 install --no-cache-dir \
             numpy \ 
             pandas \
             python-dateutil \
