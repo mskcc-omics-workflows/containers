@@ -3,8 +3,8 @@ FROM ubuntu:22.04
 # Labels
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="John Orgera (orgeraj@mskcc.org), Nikhil Kumar (kumarn1@mskcc.org)" \
-      org.opencontainers.image.created="2025-08-14T11:07:00Z" \
-      org.opencontainers.image.version="1.1.0" \
+      org.opencontainers.image.created="2025-08-20T11:07:00Z" \
+      org.opencontainers.image.version="1.1.1" \
       org.opencontainers.image.version.python="3.10" \
       org.opencontainers.image.source="https://github.com/mskcc-omics-workflows/containers/containers/netmhctools/" \
       org.opencontainers.image.url="https://github.com/mskcc-omics-workflows/containers/" \
@@ -13,7 +13,8 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NETMHC_PACKAGE=https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/netMHC.Linux.tar.gz
-ENV NETMHCTOOLS_TAG=1.1.0
+ENV NETMHCTOOLS_TAG=1.1.1
+
 RUN --mount=type=secret,id=MSK_JFROG_USERNAME,env=MSK_JFROG_USERNAME \
       --mount=type=secret,id=MSK_JFROG_TOKEN,env=MSK_JFROG_TOKEN \
       set -xe && apt-get update -y \
@@ -43,15 +44,20 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME,env=MSK_JFROG_USERNAME \
       && tar -xvzf /tmp/netMHCTmp/netMHC.Linux.tar.gz -C /tmp/netMHCTmp/ \
       # Install netmhc 3.4
       && tar -xvzf /tmp/netMHCTmp/netMHC/netMHC-3.4.Linux.tar.gz -C /usr/local/bin/ \
-      chmod -R 777 /usr/local/bin/netMHC-3.4/ \
+      && chmod -R 777 /usr/local/bin/netMHC-3.4/ \
       # Install netmhcpan 4.1
-      && mkdir -p /tmp/netMHCTmp/netMHCpan-4 \
+      && mkdir -p /tmp/netMHCTmp/netMHCpan-4.1 \
       && tar -xvzf /tmp/netMHCTmp/netMHC/netMHCpan-4.1b.Linux.tar.gz -C /usr/local/bin/ \
       && wget --directory-prefix /tmp/netMHCTmp/netMHCpan-4 "https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/data.tar.gz" \
-      && tar -zxvf /tmp/netMHCTmp/netMHCpan-4/data.tar.gz -C /usr/local/bin/netMHCpan-4.1/  \
+      && tar -zxvf /tmp/netMHCTmp/netMHCpan-4.1/data.tar.gz -C /usr/local/bin/netMHCpan-4.1/  \
       && sed -i 's|'/net/sund-nas.win.dtu.dk/storage/services/www/packages/netMHCpan/4.1/netMHCpan-4.1'|'/usr/local/bin/netMHCpan-4.1'|' /usr/local/bin/netMHCpan-4.1/netMHCpan \
       && sed -i '32c\setenv NETMHCpan /usr/local/bin/netMHCpan-4.1/Linux_x86_64' /usr/local/bin/netMHCpan-4.1/netMHCpan \
       && chmod -R 777 /usr/local/bin/netMHCpan-4.1 \
+      # Install netmhcpan 4.2
+      && tar -xvzf /tmp/netMHCTmp/netMHC/netMHCpan-4.2bstatic.Linux.tar.gz -C /usr/local/bin/ \
+      && sed -i 's|'/tools/src/netMHCpan-4.2'|'/usr/local/bin/netMHCpan-4.2'|' /usr/local/bin/netMHCpan-4.2/netMHCpan \
+      && sed -i '32c\setenv NETMHCpan /usr/local/bin/netMHCpan-4.2/Linux_x86_64' /usr/local/bin/netMHCpan-4.2/netMHCpan \
+      && chmod -R 777 /usr/local/bin/netMHCpan-4.2 \      
       # Install netmhcstabpan 1.0
       && mkdir -p /tmp/netMHCTmp/netMHCstabpan-1.0 \
       && tar -xvzf /tmp/netMHCTmp/netMHC/netMHCstabpan-1.0b.Linux.tar.gz -C /usr/local/bin/ \
