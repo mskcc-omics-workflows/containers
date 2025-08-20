@@ -16,10 +16,10 @@ ENV NETMHC_PACKAGE=https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local
 ENV NETMHCTOOLS_TAG=1.1.1
 
 RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
-      MSK_JFROG_USERNAME="$(cat /run/secrets/msk_jfrog_username)" \
+      MSK_JFROG_USERNAME="$(cat /run/secrets/MSK_JFROG_USERNAME)" \
       export MSK_JFROG_USERNAME \
       && --mount=type=secret,id=MSK_JFROG_TOKEN \
-      MSK_JFROG_TOKEN="$(cat /run/secrets/msk_jfrog_token)" \
+      MSK_JFROG_TOKEN="$(cat /run/secrets/MSK_JFROG_TOKEN)" \
       export MSK_JFROG_TOKEN \
       set -xe && apt-get update -y \
       # Install packages
