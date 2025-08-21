@@ -8,7 +8,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.version="1.3" \
       org.opencontainers.image.source="https://github.com/mskcc/NeoantigenEditing" \
       org.opencontainers.image.url="https://github.com/mskcc-omics-workflows/containers/containers/NeoantigenEditing/" \
-      org.opencontainers.image.title="NeoantigenEditing" \
+      org.opencontainers.image.title="neoantigen-editing" \
       org.opencontainers.image.description="Tools for computing neoantigen qualities and for performing clone composition predictions."
 
 ENV DEBIAN_FRONTEND=noninteractive
