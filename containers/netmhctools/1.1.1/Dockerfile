@@ -17,7 +17,7 @@ ENV NETMHCTOOLS_TAG=1.1.1
 
 RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       --mount=type=secret,id=MSK_JFROG_TOKEN \
-      set -xe && apt-get update -y \
+      set -xe && apt-get update -y && \
       # Install packages
       apt-get install --no-install-recommends -y \
       build-essential \
