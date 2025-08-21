@@ -17,9 +17,9 @@ ENV NETMHCTOOLS_TAG=1.1.1
 
 RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       --mount=type=secret,id=MSK_JFROG_TOKEN \
-      && set -xe && apt-get update -y \
+      set -xe && apt-get update -y \
       # Install packages
-      && apt-get install --no-install-recommends -y \
+      apt-get install --no-install-recommends -y \
       build-essential \
       python3.10 \
       python3-pip \
@@ -63,7 +63,7 @@ RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       # Install netmhcstabpan 1.0
       && mkdir -p /tmp/netMHCTmp/netMHCstabpan-1.0 \
       && tar -xvzf /tmp/netMHCTmp/netMHC/netMHCstabpan-1.0b.Linux.tar.gz -C /usr/local/bin/ \
-      && wget --directory-prefix /tmp/netMHCTmp/netMHCstabpan-1.0 "https://services.healthtech.dtu.dk/services/NetMHCstabpan-1.0/data.tar.gz" \
+      && wget --progress=dot:giga --directory-prefix /tmp/netMHCTmp/netMHCstabpan-1.0 "https://services.healthtech.dtu.dk/services/NetMHCstabpan-1.0/data.tar.gz" \
       && tar -zxvf /tmp/netMHCTmp/netMHCstabpan-1.0/data.tar.gz -C /usr/local/bin/netMHCstabpan-1.0/ \
       && chmod -R 777 /usr/local/bin/netMHCstabpan-1.0 \
       # Clean up
