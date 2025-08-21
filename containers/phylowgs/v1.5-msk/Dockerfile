@@ -21,8 +21,8 @@ RUN apt-get update -y \
       && cd /tmp \
       && git clone --branch 1.5 https://github.com/mskcc/phylowgs \
       && cd phylowgs \
-      && pip2 install -r requirements.txt  \
-      && g++ -o mh.o -O3 mh.cpp  util.cpp `gsl-config --cflags --libs` \
+      && pip2 install --no-cache-dir -r requirements.txt  \
+      && g++ -o mh.o -O3 mh.cpp  util.cpp 'gsl-config --cflags --libs' \
       && cp -r . /usr/bin \
       # Clean up
       && rm -r /tmp/phylowgs \
