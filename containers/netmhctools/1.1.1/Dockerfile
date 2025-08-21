@@ -73,4 +73,4 @@ RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       # Clean up
       && apt-get clean \
       && apt-get purge \
-      && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*                                                                                                                                                                                                                                                                                                                                                                                                                                                 0B
+      && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* # hadolint ignore=SC2215
