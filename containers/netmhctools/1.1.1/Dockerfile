@@ -23,6 +23,7 @@ RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       build-essential \
       python3.10 \
       python3-pip \
+      python2 \
       libc6-dev \
       tcsh \
       libnss-sss \
