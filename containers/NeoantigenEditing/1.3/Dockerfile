@@ -14,15 +14,12 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NEOANTIGEN_EDITING_TAG 1.3
 
-
 RUN apt-get update -y \
       # Install packages
       && apt-get install -y --no-install-recommends  python3 python3-pip git make build-essential ncbi-blast+ python3-pandas python3-matplotlib python3-scipy python3-numpy python3-biopython \
       # Install neoantigenEditing
-      && cd /tmp \
-      && git clone --branch ${NEOANTIGEN_EDITING_TAG} https://github.com/mskcc/NeoantigenEditing \
-      && cd NeoantigenEditing \
-      && cp -r . /usr/bin \
+      && git clone --branch ${NEOANTIGEN_EDITING_TAG} https://github.com/mskcc/NeoantigenEditing /tmp/NeoantigenEditing \
+      && cp -r /tmp/NeoantigenEditing/ /usr/bin \
       # Clean up
       && rm -r /tmp/NeoantigenEditing \
       && apt-get clean \
