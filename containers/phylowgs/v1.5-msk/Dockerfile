@@ -24,7 +24,7 @@ RUN apt-get update -y \
       && git clone --branch 1.5 https://github.com/mskcc/phylowgs /tmp/phylowgs \
       && pip2 install --no-cache-dir -r /tmp/phylowgs/requirements.txt  \
       && cp -r /tmp/phylowgs/ /usr/bin \
-      && g++ -I/usr/bin/phylowgs -o/usr/bin/phylowgs/mh.o -O3 /usr/bin/phylowgs/mh.cpp  /usr/bin/phylowgs/util.cpp $(gsl-config --cflags --libs) \
+      && g++ -I/usr/bin/phylowgs -o /usr/bin/phylowgs/mh.o -O3 /usr/bin/phylowgs/mh.cpp  /usr/bin/phylowgs/util.cpp -I/usr/include -L/usr/lib/aarch64-linux-gnu -lgsl -lgslcblas -lm \
       # Clean up
       && rm -r /tmp/phylowgs \
       && apt-get clean \
