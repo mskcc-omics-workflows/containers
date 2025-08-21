@@ -1,4 +1,4 @@
-FROM python:2.7
+FROM ubuntu:20.04
 
 # Labels
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
@@ -16,14 +16,15 @@ ENV PHYLOWGS_TAG="v1.5-msk"
 
 RUN apt-get update -y \
       # Install packages
-      && apt-get install -y --no-install-recommends python2 git make build-essential libgsl-dev \
+      && apt-get install -y --no-install-recommends python2 python2-dev git curl ca-certificates libblas-dev liblapack-dev gfortran make build-essential libgsl-dev \
+      # Setup python
+      && curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output /tmp/get-pip.py \
+      && python2 /tmp/get-pip.py \
       # Install phylowgs
-      && cd /tmp \
-      && git clone --branch 1.5 https://github.com/mskcc/phylowgs \
-      && cd phylowgs \
-      && pip2 install --no-cache-dir -r requirements.txt  \
-      && g++ -o mh.o -O3 mh.cpp  util.cpp 'gsl-config --cflags --libs' \
-      && cp -r . /usr/bin \
+      && git clone --branch 1.5 https://github.com/mskcc/phylowgs /tmp/phylowgs \
+      && pip2 install --no-cache-dir -r /tmp/phylowgs/requirements.txt  \
+      && cp -r /tmp/phylowgs/ /usr/bin \
+      && g++ -I/usr/bin/phylowgs -o/usr/bin/phylowgs/mh.o -O3 /usr/bin/phylowgs/mh.cpp  /usr/bin/phylowgs/util.cpp $(gsl-config --cflags --libs) \
       # Clean up
       && rm -r /tmp/phylowgs \
       && apt-get clean \
