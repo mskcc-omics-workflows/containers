@@ -66,6 +66,9 @@ RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       && tar -xvzf /tmp/netMHCTmp/netMHC/netMHCstabpan-1.0b.Linux.tar.gz -C /usr/local/bin/ \
       && wget --progress=dot:giga --directory-prefix /tmp/netMHCTmp/netMHCstabpan-1.0 "https://services.healthtech.dtu.dk/services/NetMHCstabpan-1.0/data.tar.gz" \
       && tar -zxvf /tmp/netMHCTmp/netMHCstabpan-1.0/data.tar.gz -C /usr/local/bin/netMHCstabpan-1.0/ \
+      && sed -i 's|'/net/sund-nas.win.dtu.dk/storage/services/www/packages/netMHCstabpan/1.0/netMHCstabpan-1.0'|'/usr/local/bin/netMHCstabpan-1.0'|' /usr/local/bin/netMHCstabpan-1.0/netMHCstabpan \
+      && sed -i 's|'/tools/src/netMHCpan-2.8/netMHCpan'|'/usr/local/bin/netMHCpan-4.1/netMHCpan'|' /usr/local/bin/netMHCstabpan-1.0/netMHCstabpan \
+      && sed -i '35c\setenv NETMHCstabpan /usr/local/bin/netMHCstabpan-1.0/Linux_x86_64' /usr/local/bin/netMHCstabpan-1.0/netMHCstabpan \
       && chmod -R 777 /usr/local/bin/netMHCstabpan-1.0 \
       # Clean up
       && apt-get clean \
