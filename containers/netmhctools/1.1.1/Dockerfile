@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.licenses="ACADEMIC SOFTWARE LICENSE AGREEMENT" \
       org.opencontainers.image.version="1.1.1" \
       org.opencontainers.image.source="https://github.com/mskcc-omics-workflows/containers/containers/netmhctools/" \
-      org.opencontainers.image.url="https://github.com/mskcc-omics-workflows/containers/" \
+      org.opencontainers.image.url="https://services.healthtech.dtu.dk/" \
       org.opencontainers.image.title="Netmhctools" \
       org.opencontainers.image.description="Suite of Netmhctools for binding prediction"
 
