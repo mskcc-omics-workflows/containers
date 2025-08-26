@@ -4,6 +4,7 @@ FROM ubuntu:20.04
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="Nikhil Kumar (kumarn1@mskcc.org), John Orgera (orgeraj@mskcc.org)" \
       org.opencontainers.image.created="2025-08-21T11:07:00Z" \
+      imageprivacy="False" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.version="1.5-msk" \
       org.opencontainers.image.source="https://github.com/mskcc/phylowgs" \
