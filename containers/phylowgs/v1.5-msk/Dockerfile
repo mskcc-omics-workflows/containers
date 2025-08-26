@@ -6,6 +6,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.created="2025-08-21T11:07:00Z" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.version="1.5-msk" \
+      org.opencontainers.image.imageprivacy="False" \
       org.opencontainers.image.source="https://github.com/mskcc/phylowgs" \
       org.opencontainers.image.url="https://github.com/mskcc-omics-workflows/containers/containers/phylowgs/" \
       org.opencontainers.image.title="Phylowgs" \

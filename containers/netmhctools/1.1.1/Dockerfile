@@ -6,6 +6,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.created="2025-08-20T11:07:00Z" \
       org.opencontainers.image.licenses="ACADEMIC SOFTWARE LICENSE AGREEMENT" \
       org.opencontainers.image.version="1.1.1" \
+      org.opencontainers.image.imageprivacy="False" \
       org.opencontainers.image.source="https://github.com/mskcc-omics-workflows/containers/containers/netmhctools/" \
       org.opencontainers.image.url="https://services.healthtech.dtu.dk/" \
       org.opencontainers.image.title="Netmhctools" \
