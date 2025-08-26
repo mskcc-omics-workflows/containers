@@ -4,7 +4,7 @@ FROM ubuntu:24.04
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="Nikhil Kumar (kumarn1@mskcc.org), John Orgera (orgeraj@mskcc.org)" \
       org.opencontainers.image.created="2025-08-21T11:07:00Z" \
-      org.opencontainers.image.imageprivacy="False" \
+      imageprivacy="False" \
       org.opencontainers.image.licenses="ACRRI_TERMS_OF_USE" \
       org.opencontainers.image.version="1.3" \
       org.opencontainers.image.source="https://github.com/mskcc/NeoantigenEditing" \
