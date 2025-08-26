@@ -34,20 +34,34 @@ org.opencontainers.image.source
 org.opencontainers.image.version
 org.opencontainers.image.title
 org.opencontainers.image.description
+imageprivacy
 ```
-You can optionally use any of the above properties with an extension related to a specific software in the image, and you can use multiple of them as well. For example, if you want to label versions for both the Java version and the abra version:
+You can set imageprivacy to false to make the image public:
 ```
-LABEL \
-    org.opencontainers.image.version.java=${JAVA_VERSION} \
-    org.opencontainers.image.version.abra2=${ABRA2_VERSION}
+imageprivacy='false'
 ```
-It is also acceptable to use no extension.
 
 Superfluous labels will cause the Dockerfile linting to fail. Missing labels will produce an Info message, but will not trigger a failure. Test your local Dockerfile using `hadolint containers/<image>/<version>/Dockerfile` from the top-level folder of the git repo.
 
 #### Private Images
 
-By default, image recipes are built and pushed to JFrog, which is private to MSKCC, and GHCR, which is public. If the optional `imageprivacy` label is used in the Dockerfile, this behavior can be modified. When set to `"true"`, the image will not be pushed to the GHCR container registry. For all other values, the image will be pushed to the container registry when merged to main. See `containers/testappprivate` for an example.
+By default, image recipes are built and pushed to JFrog, which is private to MSKCC, and GHCR, which is public. If the `imageprivacy` label is set to `"true"`, the image will not be pushed to the GHCR container registry. For all other values, the image will be pushed to the container registry when merged to main. See `containers/testappprivate` for an example.
+
+#### Storing sensitive files in Jfrog
+You can use Jfrog to store any sensitve files/aritifacts you need in your docker build.
+The image uses Jfrog to pull binaries needed for install. We do this by setting `MSK_JFROG_USERNAME` and `MSK_JFROG_TOKEN` in github secrets.
+The Docker build github actions for prod and dev have been modified to add the secrets in so that the docker containers can mount them to pull assets from Jfrog.
+To mount the secrets we use:
+```
+RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
+      --mount=type=secret,id=MSK_JFROG_TOKEN \
+```
+The secrets are then stored in `/run/secrets/MSK_JFROG_USERNAME`, you can use them like this:
+```
+--user="$(cat /run/secrets/MSK_JFROG_USERNAME)"
+```
+Have a look at [netmhctools](containers/netmhctools/1.1.1/Dockerfile) for an example:
+This is the best way to use secrets with the image, and it also works with the hadolint
 
 #### Created Date
 
