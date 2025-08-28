@@ -48,7 +48,7 @@ Superfluous labels will cause the Dockerfile linting to fail. Missing labels wil
 By default, image recipes are built and pushed to JFrog, which is private to MSKCC, and GHCR, which is public. If the `imageprivacy` label is set to `"true"`, the image will not be pushed to the GHCR container registry. For all other values, the image will be pushed to the container registry when merged to main. See `containers/testappprivate` for an example.
 
 #### Storing sensitive files in Jfrog
-You can use Jfrog to store any sensitve files/aritifacts you need in your docker build.
+You can use Jfrog to store any sensitve files/artifacts you need in your docker build.
 The image uses Jfrog to pull binaries needed for install. We do this by setting `MSK_JFROG_USERNAME` and `MSK_JFROG_TOKEN` in github secrets.
 The Docker build github actions for prod and dev have been modified to add the secrets in so that the docker containers can mount them to pull assets from Jfrog.
 To mount the secrets we use:
