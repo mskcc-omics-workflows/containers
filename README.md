@@ -63,6 +63,8 @@ The secrets are then stored in `/run/secrets/MSK_JFROG_USERNAME`, you can use th
 Have a look at [netmhctools](containers/netmhctools/1.1.1/Dockerfile) for an example:
 This is the best way to use secrets with the image, and it also works with the hadolint
 
+If you have sensitive information on this container, make sure to add `imageprivacy='false'` so that the image does not get pushed to the public ghcr.io domain. If you still need the package accessible outside MSK, make sure appropriate encryption/visibility measures are in place for the GHCR image.
+
 #### Created Date
 
 The `org.opencontainers.image.created` label should be used to timestamp the image as accurately as possible. The value should match the following regular expression:
