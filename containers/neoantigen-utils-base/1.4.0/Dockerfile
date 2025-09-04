@@ -13,7 +13,8 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.description="The base image for neoantigen helper utils"
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV NEOSV_TAG=1.2
+ENV NEOSV_TAG=0.0.4-mskv1
+ENV TZ=Etc/UTC
 ENV MUTALYZER_TAG=3.1.1-mskv1
 
 RUN set -xe && apt-get update \
@@ -39,15 +40,15 @@ RUN set -xe && apt-get update \
     python3.10-dev \
     python3-pip \
     # Install vcflib
-    && git clone https://github.com/Sentieon/vcflib.git /usr/bin/vcflib/ \
+    libvcflib-tools \
+    libvcflib-dev \
     # Upgrade pip
     && python3 -m pip install --no-cache-dir --upgrade pip \
     && pip3 install --no-cache-dir "numpy<2" \
     && pip3 install --no-cache-dir pandas \
-    && pip3 install --no-cache-dir git+https://github.com/mskcc/mutalyzer.git@${MUTALYZER_TAG} \
+    && pip3 install --use-pep517 --no-cache-dir git+https://github.com/mskcc/mutalyzer.git@${MUTALYZER_TAG} \
     # Install neosv
-    && git clone https://github.com/pintoa1-mskcc/NeoSV.git /usr/bin/NeoSV/ \
-    && python3 /usr/bin/NeoSV/setup.py install \ 
+    &&  pip3 install --use-pep517 --no-cache-dir git+https://github.com/pintoa1-mskcc/NeoSV.git@${NEOSV_TAG} \
     # Clean up
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
