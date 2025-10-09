@@ -30,6 +30,7 @@ RUN set -xe && apt-get update \
     wget \
     perl \
     bzip2 \
+    tabix \
     pkg-config \
     libpng-dev \
     libjpeg8-dev \
