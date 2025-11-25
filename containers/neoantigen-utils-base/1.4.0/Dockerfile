@@ -1,9 +1,9 @@
-FROM ubuntu:22.04
+FROM ubuntu:25.10
 
 # Labels
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="John Orgera (orgeraj@mskcc.org), Nikhil Kumar (kumarn1@mskcc.org)" \
-      org.opencontainers.image.created="2024-04-24T11:07:00Z" \
+      org.opencontainers.image.created="2025-11-25T11:07:00Z" \
       imageprivacy="False" \
       org.opencontainers.image.version="1.4.0" \
       org.opencontainers.image.licenses="MIT" \
