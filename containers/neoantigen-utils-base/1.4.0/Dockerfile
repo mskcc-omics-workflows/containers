@@ -1,4 +1,50 @@
+# Build Python from source
+FROM ubuntu:25.10 AS python-builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHON_VERSION=3.10.15
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y \
+    build-essential \
+    wget \
+    ca-certificates \
+    libffi-dev \
+    libgdbm-dev \
+    libsqlite3-dev \
+    libreadline-dev \
+    libbz2-dev \
+    liblzma-dev \
+    libssl-dev \
+    zlib1g-dev \
+    tk-dev \
+    uuid-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /tmp/python-build
+
+RUN wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz \
+    && tar -xf Python-${PYTHON_VERSION}.tar.xz \
+    && rm Python-${PYTHON_VERSION}.tar.xz
+
+WORKDIR /tmp/python-build/Python-${PYTHON_VERSION}
+
+RUN ./configure \
+        --prefix=/opt/python \
+        --enable-optimizations \
+        --with-lto \
+        --enable-shared \
+        --with-computed-gotos \
+        --with-system-ffi \
+        --enable-loadable-sqlite-extensions \
+        --with-ensurepip=install \
+        LDFLAGS="-Wl,-rpath /opt/python/lib" \
+    && make -j"$(nproc)" PROFILE_TASK="-m test.regrtest --pgo -j$(nproc)" \
+    && make install
+
+# Final image
 FROM ubuntu:25.10
+
 # Labels
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="John Orgera (orgeraj@mskcc.org), Nikhil Kumar (kumarn1@mskcc.org)" \
@@ -15,14 +61,31 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV NEOSV_TAG=0.0.4-mskv1
 ENV TZ=Etc/UTC
 ENV MUTALYZER_TAG=3.1.1-mskv1
-ENV PYTHON_VERSION=3.10.15
+ENV PATH=/opt/python/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/python/lib:$LD_LIBRARY_PATH
 
-RUN set -xe && apt-get update \
-    # Install packages
+# Copy Python installation from builder stage
+COPY --from=python-builder /opt/python /opt/python
+
+RUN apt-get update \
+    # Install runtime dependencies for Python
     && apt-get install --no-install-recommends -y \
+    libffi8 \
+    libgdbm6 \
+    libsqlite3-0 \
+    libreadline8 \
+    libbz2-1.0 \
+    liblzma5 \
+    libssl3 \
+    zlib1g \
+    libtk8.6 \
+    uuid-runtime \
+    ca-certificates \
+    # Install other required packages
     build-essential \
     cmake \
     libncurses5-dev \
+    libncurses-dev \
     libbz2-dev \
     liblzma-dev \
     libcurl4-gnutls-dev \
@@ -37,44 +100,22 @@ RUN set -xe && apt-get update \
     libjpeg8-dev \
     libfreetype6-dev \
     unzip \
+    git \
     # Install vcflib
     libvcflib-tools \
     libvcflib-dev \
-    # Additional dependencies for building Python from source
-    libffi-dev \
-    libgdbm-dev \
-    libsqlite3-dev \
-    libreadline-dev \
-    tk-dev \
-    uuid-dev \
-    ca-certificates \
-    # Download and extract Python source
-    && wget -q -P /tmp https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz \
-    && tar -xf /tmp/Python-${PYTHON_VERSION}.tar.xz -C /tmp \
-    # Build Python 3.10 from source with optimizations
-    && /tmp/Python-${PYTHON_VERSION}/configure \
-        --enable-optimizations \
-        --with-lto \
-        --enable-shared \
-        --with-computed-gotos \
-        --with-system-ffi \
-        --enable-loadable-sqlite-extensions \
-        --with-ensurepip=install \
-        LDFLAGS="-Wl,-rpath /usr/local/lib" \
-    && make -C /tmp/Python-${PYTHON_VERSION} -j"$(nproc)" PROFILE_TASK="-m test.regrtest --pgo -j$(nproc)" \
-    && make -C /tmp/Python-${PYTHON_VERSION} altinstall \
-    && ldconfig \
-    && rm -rf /tmp/Python-${PYTHON_VERSION} /tmp/Python-${PYTHON_VERSION}.tar.xz \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN ldconfig \
     # Create symlinks for python3 and pip3
-    && ln -sf /usr/local/bin/python3.10 /usr/local/bin/python3 \
-    && ln -sf /usr/local/bin/pip3.10 /usr/local/bin/pip3 \
+    && ln -sf /opt/python/bin/python3.10 /usr/local/bin/python3 \
+    && ln -sf /opt/python/bin/pip3.10 /usr/local/bin/pip3 \
+    && ln -sf /opt/python/bin/python3.10 /usr/local/bin/python \
+    && ln -sf /opt/python/bin/pip3.10 /usr/local/bin/pip \
     # Upgrade pip
     && python3 -m pip install --no-cache-dir --upgrade pip \
     && pip3 install --no-cache-dir "numpy<2" \
     && pip3 install --no-cache-dir pandas \
     && pip3 install --use-pep517 --no-cache-dir git+https://github.com/mskcc/mutalyzer.git@${MUTALYZER_TAG} \
     # Install neosv
-    &&  pip3 install --use-pep517 --no-cache-dir git+https://github.com/pintoa1-mskcc/NeoSV.git@${NEOSV_TAG} \
-    # Clean up
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && pip3 install --use-pep517 --no-cache-dir git+https://github.com/pintoa1-mskcc/NeoSV.git@${NEOSV_TAG}
