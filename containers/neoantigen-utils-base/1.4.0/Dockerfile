@@ -17,6 +17,8 @@ ENV TZ=Etc/UTC
 ENV MUTALYZER_TAG=3.1.1-mskv1
 ENV PYTHON_VERSION=3.10.15
 
+WORKDIR /tmp
+
 RUN set -xe && apt-get update \
     # Install packages
     && apt-get install --no-install-recommends -y \
@@ -37,7 +39,6 @@ RUN set -xe && apt-get update \
     libjpeg8-dev \
     libfreetype6-dev \
     unzip \
-    git \
     # Install vcflib
     libvcflib-tools \
     libvcflib-dev \
@@ -49,24 +50,23 @@ RUN set -xe && apt-get update \
     tk-dev \
     uuid-dev \
     ca-certificates \
-    # Build Python 3.10 from source with optimizations
-    && cd /tmp \
+    # Download and extract Python source
     && wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz \
     && tar -xf Python-${PYTHON_VERSION}.tar.xz \
-    && cd Python-${PYTHON_VERSION} \
-    && ./configure \
-        --enable-optimizations \
-        --with-lto \
-        --enable-shared \
-        --with-computed-gotos \
-        --with-system-ffi \
-        --enable-loadable-sqlite-extensions \
-        --with-ensurepip=install \
-        LDFLAGS="-Wl,-rpath /usr/local/lib" \
-    && make -j$(nproc) PROFILE_TASK='-m test.regrtest --pgo -j$(nproc)' \
-    && make altinstall \
+    # Build Python 3.10 from source with optimizations
+    && (cd Python-${PYTHON_VERSION} \
+        && ./configure \
+            --enable-optimizations \
+            --with-lto \
+            --enable-shared \
+            --with-computed-gotos \
+            --with-system-ffi \
+            --enable-loadable-sqlite-extensions \
+            --with-ensurepip=install \
+            LDFLAGS="-Wl,-rpath /usr/local/lib" \
+        && make -j$(nproc) PROFILE_TASK='-m test.regrtest --pgo -j$(nproc)' \
+        && make altinstall) \
     && ldconfig \
-    && cd /tmp \
     && rm -rf Python-${PYTHON_VERSION} Python-${PYTHON_VERSION}.tar.xz \
     # Create symlinks for python3 and pip3
     && ln -sf /usr/local/bin/python3.10 /usr/local/bin/python3 \
@@ -77,7 +77,9 @@ RUN set -xe && apt-get update \
     && pip3 install --no-cache-dir pandas \
     && pip3 install --use-pep517 --no-cache-dir git+https://github.com/mskcc/mutalyzer.git@${MUTALYZER_TAG} \
     # Install neosv
-    && pip3 install --use-pep517 --no-cache-dir git+https://github.com/pintoa1-mskcc/NeoSV.git@${NEOSV_TAG} \
+    &&  pip3 install --use-pep517 --no-cache-dir git+https://github.com/pintoa1-mskcc/NeoSV.git@${NEOSV_TAG} \
     # Clean up
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /
