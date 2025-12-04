@@ -23,7 +23,7 @@ RUN apt-get update \
 
 WORKDIR /tmp/python-build
 
-RUN wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz \
+RUN wget -q https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz \
     && tar -xf Python-${PYTHON_VERSION}.tar.xz \
     && rm Python-${PYTHON_VERSION}.tar.xz
 
