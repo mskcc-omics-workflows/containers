@@ -61,7 +61,7 @@ RUN set -xe && apt-get update \
         --enable-loadable-sqlite-extensions \
         --with-ensurepip=install \
         LDFLAGS="-Wl,-rpath /usr/local/lib" \
-    && make -C /tmp/Python-${PYTHON_VERSION} -j$(nproc) PROFILE_TASK="-m test.regrtest --pgo -j$(nproc)" \
+    && make -C /tmp/Python-${PYTHON_VERSION} -j"$(nproc)" PROFILE_TASK="-m test.regrtest --pgo -j$(nproc)" \
     && make -C /tmp/Python-${PYTHON_VERSION} altinstall \
     && ldconfig \
     && rm -rf /tmp/Python-${PYTHON_VERSION} /tmp/Python-${PYTHON_VERSION}.tar.xz \
