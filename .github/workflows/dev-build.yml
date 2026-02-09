@@ -123,10 +123,7 @@ jobs:
       - name: Get docker tag
         id: docker_tag
         run: echo tag="${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
-      - name: Validate image build metadata
-        run: |
-          python .github/workflows/scripts/validate_docker.py ${{ steps.docker_tag.outputs.tag }} .github/workflows/scripts/jsonschema/docker_image.json
-      # Multi-arch setup
+        # Multi-arch setup
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -150,6 +147,9 @@ jobs:
             MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
             MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
           push: true
+      - name: Validate image build metadata
+        run: |
+          python .github/workflows/scripts/validate_docker.py ${{ steps.docker_tag.outputs.tag }} .github/workflows/scripts/jsonschema/docker_image.json
       - name: Verify multi-arch manifest
         run: |
           echo "Verifying multi-arch manifest for ${{ steps.docker_repo_name.outputs.name }}:${{ steps.docker_repo_version.outputs.version }}"
