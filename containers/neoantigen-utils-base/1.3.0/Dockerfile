@@ -24,6 +24,7 @@ RUN set -xe && apt-get update \
     libcurl4-gnutls-dev \
     zlib1g-dev \
     libssl-dev \
+    bash \
     wget \
     perl \
     bzip2 \
