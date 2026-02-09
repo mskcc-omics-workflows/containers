@@ -63,6 +63,7 @@ ENV TZ=Etc/UTC
 ENV MUTALYZER_TAG=3.1.1-mskv1
 ENV PATH=/opt/python/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/python/lib:$LD_LIBRARY_PATH
+ARG TARGETPLATFORM
 
 # Copy Python installation from builder stage
 COPY --from=python-builder /opt/python /opt/python
