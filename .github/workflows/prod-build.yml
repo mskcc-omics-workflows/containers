@@ -130,13 +130,12 @@ jobs:
           registry: ${{ env.JFROG_REGISTRY }}
           username: ${{ secrets.MSK_JFROG_USERNAME }}
           password: ${{ secrets.MSK_JFROG_TOKEN }}
-      - name: Build and push image to JFrog registry
+      - name: Build image locally and load into Docker
         uses: docker/build-push-action@v5
         with:
           context: containers/${{ matrix.tags }}/
           file: containers/${{ matrix.tags }}/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
+          platforms: linux/amd64
           load: true
           tags: ${{ steps.docker_tag_jfrog.outputs.tag }}
           cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}
@@ -144,12 +143,12 @@ jobs:
           secrets: |
             MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
             MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
-      - name: Validate Jfrog image build metadata
+      - name: Validate image build metadata
         run: |
           python .github/workflows/scripts/validate_docker.py ${{ steps.docker_tag_jfrog.outputs.tag }} .github/workflows/scripts/jsonschema/docker_image.json
-      - name: Test JFrog image build
+      - name: Test image build
         run: |
-          docker run --rm ${{ steps.docker_tag_jfrog.outputs.tag }} echo "Image build and push to JFrog registry successful"
+          docker run --rm ${{ steps.docker_tag_jfrog.outputs.tag }} echo "Image build successful"
       - name: Get privacy tag
         id: check_private
         run: |
@@ -161,7 +160,10 @@ jobs:
       - name: Log in to GHCR registry
         if: steps.check_private.outputs.private_image == 'false'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Build and push image to GHCR registry
+      - name: Validate image build metadata
+        run: |
+          python .github/workflows/scripts/validate_docker.py ${{ steps.docker_tag_ghcr.outputs.tag }} .github/workflows/scripts/jsonschema/docker_image.json
+      - name: Push image to JFrog registry
         if: steps.check_private.outputs.private_image == 'false'
         uses: docker/build-push-action@v5
         with:
@@ -169,16 +171,26 @@ jobs:
           file: containers/${{ matrix.tags }}/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          load: true
           tags: ${{ steps.docker_tag_ghcr.outputs.tag }}
           cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}
           cache-to: type=gha,mode=max,scope=${{ steps.docker_repo_name.outputs.name }}
           secrets: |
             MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
             MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
-      - name: Validate GHCR image build metadata
-        run: |
-          python .github/workflows/scripts/validate_docker.py ${{ steps.docker_tag_ghcr.outputs.tag }} .github/workflows/scripts/jsonschema/docker_image.json
+      - name: Push image to GHCR registry
+        if: steps.check_private.outputs.private_image == 'false'
+        uses: docker/build-push-action@v5
+        with:
+          context: containers/${{ matrix.tags }}/
+          file: containers/${{ matrix.tags }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.docker_tag_ghcr.outputs.tag }}
+          cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}
+          cache-to: type=gha,mode=max,scope=${{ steps.docker_repo_name.outputs.name }}
+          secrets: |
+            MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
+            MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
       - name: Verify multi-arch manifest
         run: |
           echo "Verifying multi-arch manifest for ${{ steps.docker_repo_name.outputs.name }}:${{ steps.docker_repo_version.outputs.version }}"
