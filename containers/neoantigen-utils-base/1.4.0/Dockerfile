@@ -112,7 +112,6 @@ RUN apt-get update \
     && ln -sf /opt/python/bin/python3.10 /usr/local/bin/python \
     && ln -sf /opt/python/bin/pip3.10 /usr/local/bin/pip \
     # Upgrade pip
-    && python3 -m ensurepip --default-pip \
     && pip3 install --no-cache-dir --upgrade pip \
     && pip3 install --no-cache-dir "numpy<2" \
     && pip3 install --no-cache-dir pandas \
