@@ -105,18 +105,18 @@ RUN apt-get update \
     # Install vcflib
     libvcflib-tools \
     libvcflib-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN ldconfig \
+    && ldconfig \
     # Create symlinks for python3 and pip3
     && ln -sf /opt/python/bin/python3.10 /usr/local/bin/python3 \
     && ln -sf /opt/python/bin/pip3.10 /usr/local/bin/pip3 \
     && ln -sf /opt/python/bin/python3.10 /usr/local/bin/python \
     && ln -sf /opt/python/bin/pip3.10 /usr/local/bin/pip \
     # Upgrade pip
-    && python3 -m pip install --no-cache-dir --upgrade pip \
+    && python3 -m ensurepip --default-pip \
+    && pip3 install --no-cache-dir --upgrade pip \
     && pip3 install --no-cache-dir "numpy<2" \
     && pip3 install --no-cache-dir pandas \
     && pip3 install --use-pep517 --no-cache-dir git+https://github.com/mskcc/mutalyzer.git@${MUTALYZER_TAG} \
     # Install neosv
-    && pip3 install --use-pep517 --no-cache-dir git+https://github.com/pintoa1-mskcc/NeoSV.git@${NEOSV_TAG}
+    && pip3 install --use-pep517 --no-cache-dir git+https://github.com/pintoa1-mskcc/NeoSV.git@${NEOSV_TAG} \ 
+    && rm -rf /var/lib/apt/lists/*
