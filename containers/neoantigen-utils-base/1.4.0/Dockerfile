@@ -1,5 +1,5 @@
 # Build Python from source
-FROM ubuntu:25.10 AS python-builder
+FROM --platform=$BUILDPLATFORM ubuntu:25.10 AS python-builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHON_VERSION=3.10.15
