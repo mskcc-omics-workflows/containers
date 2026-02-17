@@ -99,6 +99,7 @@ jobs:
           remove-android: "true"
           remove-haskell: "true"
           remove-codeql: "true"
+          remove-docker-images: "true"
       - name: Restore /var/lib/docker/
         if: ${{ !github.event.act }}
         run: |
@@ -170,7 +171,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.docker_tag.outputs.tag }}
           cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}-dev
-          cache-to: type=gha,mode=max,scope=${{ steps.docker_repo_name.outputs.name }}-dev
+          cache-to: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}-dev
           secrets: |
             MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
             MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
