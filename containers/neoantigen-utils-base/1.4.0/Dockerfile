@@ -1,49 +1,4 @@
-# Build Python from source
-FROM --platform=$BUILDPLATFORM ubuntu:25.10 AS python-builder
-
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PYTHON_VERSION=3.10.15
-
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y \
-    build-essential \
-    wget \
-    ca-certificates \
-    libffi-dev \
-    libgdbm-dev \
-    libsqlite3-dev \
-    libreadline-dev \
-    libbz2-dev \
-    liblzma-dev \
-    libssl-dev \
-    zlib1g-dev \
-    tk-dev \
-    uuid-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /tmp/python-build
-
-RUN wget -q https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz \
-    && tar -xf Python-${PYTHON_VERSION}.tar.xz \
-    && rm Python-${PYTHON_VERSION}.tar.xz
-
-WORKDIR /tmp/python-build/Python-${PYTHON_VERSION}
-
-RUN ./configure \
-        --prefix=/opt/python \
-        --enable-optimizations \
-        --with-lto \
-        --enable-shared \
-        --with-computed-gotos \
-        --with-system-ffi \
-        --enable-loadable-sqlite-extensions \
-        --with-ensurepip=install \
-        LDFLAGS="-Wl,-rpath /opt/python/lib" \
-    && make -j"$(nproc)" PROFILE_TASK="-m test.regrtest --pgo -j$(nproc)" \
-    && make install
-
-# Final image
-FROM ubuntu:25.10
+FROM python:3.10-slim-trixie
 
 # Labels
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
@@ -61,12 +16,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV NEOSV_TAG=0.0.4-mskv1
 ENV TZ=Etc/UTC
 ENV MUTALYZER_TAG=3.1.1-mskv1
-ENV PATH=/opt/python/bin:$PATH
-ENV LD_LIBRARY_PATH=/opt/python/lib:$LD_LIBRARY_PATH
 ARG TARGETPLATFORM
-
-# Copy Python installation from builder stage
-COPY --from=python-builder /opt/python /opt/python
 
 RUN apt-get update \
     # Install runtime dependencies for Python
@@ -98,7 +48,7 @@ RUN apt-get update \
     tabix \
     pkg-config \
     libpng-dev \
-    libjpeg8-dev \
+    libjpeg-dev \
     libfreetype6-dev \
     unzip \
     git \
@@ -106,11 +56,6 @@ RUN apt-get update \
     libvcflib-tools \
     libvcflib-dev \
     && ldconfig \
-    # Create symlinks for python3 and pip3
-    && ln -sf /opt/python/bin/python3.10 /usr/local/bin/python3 \
-    && ln -sf /opt/python/bin/pip3.10 /usr/local/bin/pip3 \
-    && ln -sf /opt/python/bin/python3.10 /usr/local/bin/python \
-    && ln -sf /opt/python/bin/pip3.10 /usr/local/bin/pip \
     # Upgrade pip
     && /usr/local/bin/pip install --no-cache-dir --upgrade pip \
     && /usr/local/bin/pip install --no-cache-dir "numpy<2" \
