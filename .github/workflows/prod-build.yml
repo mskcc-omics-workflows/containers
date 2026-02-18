@@ -157,7 +157,7 @@ jobs:
         run: pip install docker jsonschema
 
       - name: Pull image for validation
-        run: docker pull ${{ steps.docker_tag_jfrog.outputs.tag }}-amd64
+        run: docker pull --platform linux/amd64 ${{ steps.docker_tag_jfrog.outputs.tag }}-amd64
 
       - name: Validate image build metadata
         run: |
@@ -255,7 +255,7 @@ jobs:
         run: pip install docker jsonschema
 
       - name: Pull image for validation
-        run: docker pull ${{ steps.docker_tag_jfrog.outputs.tag }}-arm64
+        run: docker pull --platform linux/arm64 ${{ steps.docker_tag_jfrog.outputs.tag }}-arm64
 
       - name: Validate image build metadata
         run: |
@@ -379,7 +379,7 @@ jobs:
         run: pip install docker jsonschema
 
       - name: Pull image for validation
-        run: docker pull ${{ steps.docker_tag_ghcr.outputs.tag }}-amd64
+        run: docker pull --platform linux/amd64 ${{ steps.docker_tag_ghcr.outputs.tag }}-amd64
 
       - name: Validate image build metadata
         run: |
@@ -461,7 +461,7 @@ jobs:
         run: pip install docker jsonschema
 
       - name: Pull image for validation
-        run: docker pull ${{ steps.docker_tag_ghcr.outputs.tag }}-arm64
+        run: docker pull --platform linux/arm64 ${{ steps.docker_tag_ghcr.outputs.tag }}-arm64
 
       - name: Validate image build metadata
         run: |
