@@ -15,6 +15,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NETMHC_PACKAGE=https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/netMHC.Linux.tar.gz
 ENV NETMHCTOOLS_TAG=1.1.1
+ARG TARGETPLATFORM
 
 RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       --mount=type=secret,id=MSK_JFROG_TOKEN \
