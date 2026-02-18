@@ -54,9 +54,10 @@ jobs:
           base: "main"
           filters: ".github/tags.yml"
           token: ""
-  dockerfile-lint:
+
+  pre-build-verification:
     runs-on: ubuntu-latest
-    name: dockerfile-lint
+    name: pre-build-verification
     needs: [dockerfile-changes]
     if: needs.dockerfile-changes.outputs.docker-images != '[]'
     strategy:
@@ -67,15 +68,118 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Hadolint linting
       - name: Hadolint
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: containers/${{ matrix.tags }}/Dockerfile
           verbose: true
-  docker-validate-build-and-push:
+
+  build-amd64-jfrog:
     runs-on: ubuntu-latest
-    name: dockerfile-build-and-push
-    needs: [dockerfile-changes]
+    name: build-amd64-jfrog
+    needs: [dockerfile-changes, pre-build-verification]
+    if: needs.dockerfile-changes.outputs.docker-images != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        tags:
+          ["${{ fromJson(needs.dockerfile-changes.outputs.docker-images) }}"]
+    outputs:
+      private_image: ${{ steps.check_private.outputs.private_image }}
+    steps:
+      # save docker files
+      - name: Move /var/lib/docker/
+        run: sudo mv /var/lib/docker/ "${GITHUB_WORKSPACE}/docker"
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          build-mount-path: /var/lib/docker/
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+      - name: Restore /var/lib/docker/
+        run: |
+          sudo rsync -aPq "${GITHUB_WORKSPACE}/docker/" /var/lib/docker
+          sudo rm -rf "${GITHUB_WORKSPACE}/docker"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get docker repo name
+        id: docker_repo_name
+        run: echo name=$( dirname "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker version
+        id: docker_repo_version
+        run: echo version=$( basename "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker Jfrog tag
+        id: docker_tag_jfrog
+        run: echo tag="${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to JFrog Artifactory
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.JFROG_REGISTRY }}
+          username: ${{ secrets.MSK_JFROG_USERNAME }}
+          password: ${{ secrets.MSK_JFROG_TOKEN }}
+
+      # Build and push in one step
+      - name: Build and push amd64 image to JFrog
+        uses: docker/build-push-action@v5
+        with:
+          context: containers/${{ matrix.tags }}/
+          file: containers/${{ matrix.tags }}/Dockerfile
+          platforms: linux/amd64
+          tags: ${{ steps.docker_tag_jfrog.outputs.tag }}-amd64
+          cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}-amd64
+          cache-to: type=gha,mode=min,scope=${{ steps.docker_repo_name.outputs.name }}-amd64
+          secrets: |
+            MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
+            MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
+          push: true
+
+      # Pull and validate after push
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
+        with:
+          python-version: "3.12"
+      - name: Install pip
+        run: python -m pip install --upgrade pip
+      - name: Install python docker package
+        run: pip install docker jsonschema
+
+      - name: Pull image for validation
+        run: docker pull ${{ steps.docker_tag_jfrog.outputs.tag }}-amd64
+
+      - name: Validate image build metadata
+        run: |
+          python .github/workflows/scripts/validate_docker.py ${{ steps.docker_tag_jfrog.outputs.tag }}-amd64 .github/workflows/scripts/jsonschema/docker_image.json
+
+      - name: Test image build
+        run: |
+          docker run --rm ${{ steps.docker_tag_jfrog.outputs.tag }}-amd64 echo "Image build successful"
+
+      - name: Get privacy tag
+        id: check_private
+        run: |
+          if [ $(docker image inspect ${{ steps.docker_tag_jfrog.outputs.tag }}-amd64 | grep -ic "\"imageprivacy\": \"true\"") -gt 0 ] ; then
+            echo "private_image=true" >> $GITHUB_OUTPUT
+          else
+            echo "private_image=false" >> $GITHUB_OUTPUT
+          fi
+
+  build-arm64-jfrog:
+    runs-on: ubuntu-latest
+    name: build-arm64-jfrog
+    needs: [dockerfile-changes, pre-build-verification]
     if: needs.dockerfile-changes.outputs.docker-images != '[]'
     strategy:
       fail-fast: false
@@ -99,16 +203,10 @@ jobs:
         run: |
           sudo rsync -aPq "${GITHUB_WORKSPACE}/docker/" /var/lib/docker
           sudo rm -rf "${GITHUB_WORKSPACE}/docker"
+
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
-        with:
-          python-version: "3.12"
-      - name: Install pip
-        run: python -m pip install --upgrade pip
-      - name: Install python docker package
-        run: pip install docker jsonschema
+
       - name: Get docker repo name
         id: docker_repo_name
         run: echo name=$( dirname "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
@@ -118,89 +216,314 @@ jobs:
       - name: Get docker Jfrog tag
         id: docker_tag_jfrog
         run: echo tag="${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
-      - name: Get docker GHCR tag
-        id: docker_tag_ghcr
-        run: echo tag="${{ env.GHCR_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: Log in to JFrog Artifactory
         uses: docker/login-action@v3
         with:
           registry: ${{ env.JFROG_REGISTRY }}
           username: ${{ secrets.MSK_JFROG_USERNAME }}
           password: ${{ secrets.MSK_JFROG_TOKEN }}
-      - name: Build image locally and load into Docker
+
+      # Build and push in one step
+      - name: Build and push arm64 image to JFrog
+        uses: docker/build-push-action@v5
+        with:
+          context: containers/${{ matrix.tags }}/
+          file: containers/${{ matrix.tags }}/Dockerfile
+          platforms: linux/arm64
+          tags: ${{ steps.docker_tag_jfrog.outputs.tag }}-arm64
+          cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}-arm64
+          cache-to: type=gha,mode=min,scope=${{ steps.docker_repo_name.outputs.name }}-arm64
+          secrets: |
+            MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
+            MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
+          push: true
+
+      # Pull and validate after push
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
+        with:
+          python-version: "3.12"
+      - name: Install pip
+        run: python -m pip install --upgrade pip
+      - name: Install python docker package
+        run: pip install docker jsonschema
+
+      - name: Pull image for validation
+        run: docker pull ${{ steps.docker_tag_jfrog.outputs.tag }}-arm64
+
+      - name: Validate image build metadata
+        run: |
+          python .github/workflows/scripts/validate_docker.py ${{ steps.docker_tag_jfrog.outputs.tag }}-arm64 .github/workflows/scripts/jsonschema/docker_image.json
+
+  create-jfrog-manifest:
+    runs-on: ubuntu-latest
+    name: create-jfrog-manifest
+    needs: [dockerfile-changes, build-amd64-jfrog, build-arm64-jfrog]
+    if: needs.dockerfile-changes.outputs.docker-images != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        tags:
+          ["${{ fromJson(needs.dockerfile-changes.outputs.docker-images) }}"]
+    steps:
+      - name: Get docker repo name
+        id: docker_repo_name
+        run: echo name=$( dirname "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker version
+        id: docker_repo_version
+        run: echo version=$( basename "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker Jfrog tag
+        id: docker_tag_jfrog
+        run: echo tag="${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to JFrog Artifactory
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.JFROG_REGISTRY }}
+          username: ${{ secrets.MSK_JFROG_USERNAME }}
+          password: ${{ secrets.MSK_JFROG_TOKEN }}
+
+      - name: Create and push multi-arch manifest for JFrog
+        run: |
+          docker buildx imagetools create -t ${{ steps.docker_tag_jfrog.outputs.tag }} \
+            ${{ steps.docker_tag_jfrog.outputs.tag }}-amd64 \
+            ${{ steps.docker_tag_jfrog.outputs.tag }}-arm64
+
+      - name: Verify multi-arch manifest for JFrog
+        run: |
+          echo "Verifying multi-arch manifest for ${{ steps.docker_repo_name.outputs.name }}:${{ steps.docker_repo_version.outputs.version }}"
+          docker buildx imagetools inspect ${{ steps.docker_tag_jfrog.outputs.tag }}
+
+  build-amd64-ghcr:
+    runs-on: ubuntu-latest
+    name: build-amd64-ghcr
+    needs: [dockerfile-changes, pre-build-verification, build-amd64-jfrog]
+    if: |
+      needs.dockerfile-changes.outputs.docker-images != '[]' &&
+      needs.build-amd64-jfrog.outputs.private_image == 'false'
+    strategy:
+      fail-fast: false
+      matrix:
+        tags:
+          ["${{ fromJson(needs.dockerfile-changes.outputs.docker-images) }}"]
+    steps:
+      # save docker files
+      - name: Move /var/lib/docker/
+        run: sudo mv /var/lib/docker/ "${GITHUB_WORKSPACE}/docker"
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          build-mount-path: /var/lib/docker/
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+      - name: Restore /var/lib/docker/
+        run: |
+          sudo rsync -aPq "${GITHUB_WORKSPACE}/docker/" /var/lib/docker
+          sudo rm -rf "${GITHUB_WORKSPACE}/docker"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get docker repo name
+        id: docker_repo_name
+        run: echo name=$( dirname "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker version
+        id: docker_repo_version
+        run: echo version=$( basename "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker GHCR tag
+        id: docker_tag_ghcr
+        run: echo tag="${{ env.GHCR_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      # Build and push in one step
+      - name: Build and push amd64 image to GHCR
         uses: docker/build-push-action@v5
         with:
           context: containers/${{ matrix.tags }}/
           file: containers/${{ matrix.tags }}/Dockerfile
           platforms: linux/amd64
-          load: true
-          tags: ${{ steps.docker_tag_jfrog.outputs.tag }}
-          cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}
-          cache-to: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}
+          tags: ${{ steps.docker_tag_ghcr.outputs.tag }}-amd64
+          cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}-amd64
           secrets: |
             MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
             MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
+          push: true
+
+      # Pull and validate after push
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
+        with:
+          python-version: "3.12"
+      - name: Install pip
+        run: python -m pip install --upgrade pip
+      - name: Install python docker package
+        run: pip install docker jsonschema
+
+      - name: Pull image for validation
+        run: docker pull ${{ steps.docker_tag_ghcr.outputs.tag }}-amd64
+
       - name: Validate image build metadata
         run: |
-          python .github/workflows/scripts/validate_docker.py ${{ steps.docker_tag_jfrog.outputs.tag }} .github/workflows/scripts/jsonschema/docker_image.json
-      - name: Test image build
+          python .github/workflows/scripts/validate_docker.py ${{ steps.docker_tag_ghcr.outputs.tag }}-amd64 .github/workflows/scripts/jsonschema/docker_image.json
+
+  build-arm64-ghcr:
+    runs-on: ubuntu-latest
+    name: build-arm64-ghcr
+    needs: [dockerfile-changes, pre-build-verification, build-amd64-jfrog]
+    if: |
+      needs.dockerfile-changes.outputs.docker-images != '[]' &&
+      needs.build-amd64-jfrog.outputs.private_image == 'false'
+    strategy:
+      fail-fast: false
+      matrix:
+        tags:
+          ["${{ fromJson(needs.dockerfile-changes.outputs.docker-images) }}"]
+    steps:
+      # save docker files
+      - name: Move /var/lib/docker/
+        run: sudo mv /var/lib/docker/ "${GITHUB_WORKSPACE}/docker"
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          build-mount-path: /var/lib/docker/
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+      - name: Restore /var/lib/docker/
         run: |
-          docker run --rm ${{ steps.docker_tag_jfrog.outputs.tag }} echo "Image build successful"
-      - name: Get privacy tag
-        id: check_private
-        run: |
-          if [ $(docker image inspect ${{ steps.docker_tag_jfrog.outputs.tag }} | grep -ic "\"imageprivacy\": \"true\"") -gt 0 ] ; then
-            echo "private_image=true" >> $GITHUB_OUTPUT
-          else
-            echo "private_image=false" >> $GITHUB_OUTPUT
-          fi
+          sudo rsync -aPq "${GITHUB_WORKSPACE}/docker/" /var/lib/docker
+          sudo rm -rf "${GITHUB_WORKSPACE}/docker"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get docker repo name
+        id: docker_repo_name
+        run: echo name=$( dirname "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker version
+        id: docker_repo_version
+        run: echo version=$( basename "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker GHCR tag
+        id: docker_tag_ghcr
+        run: echo tag="${{ env.GHCR_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to GHCR registry
-        if: steps.check_private.outputs.private_image == 'false'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      # Build and push in one step
+      - name: Build and push arm64 image to GHCR
+        uses: docker/build-push-action@v5
+        with:
+          context: containers/${{ matrix.tags }}/
+          file: containers/${{ matrix.tags }}/Dockerfile
+          platforms: linux/arm64
+          tags: ${{ steps.docker_tag_ghcr.outputs.tag }}-arm64
+          cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}-arm64
+          secrets: |
+            MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
+            MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
+          push: true
+
+      # Pull and validate after push
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
+        with:
+          python-version: "3.12"
+      - name: Install pip
+        run: python -m pip install --upgrade pip
+      - name: Install python docker package
+        run: pip install docker jsonschema
+
+      - name: Pull image for validation
+        run: docker pull ${{ steps.docker_tag_ghcr.outputs.tag }}-arm64
+
       - name: Validate image build metadata
         run: |
-          python .github/workflows/scripts/validate_docker.py ${{ steps.docker_tag_ghcr.outputs.tag }} .github/workflows/scripts/jsonschema/docker_image.json
-      - name: Push image to JFrog registry
-        if: steps.check_private.outputs.private_image == 'false'
-        uses: docker/build-push-action@v5
-        with:
-          context: containers/${{ matrix.tags }}/
-          file: containers/${{ matrix.tags }}/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.docker_tag_ghcr.outputs.tag }}
-          cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}
-          cache-to: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}
-          secrets: |
-            MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
-            MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
-      - name: Push image to GHCR registry
-        if: steps.check_private.outputs.private_image == 'false'
-        uses: docker/build-push-action@v5
-        with:
-          context: containers/${{ matrix.tags }}/
-          file: containers/${{ matrix.tags }}/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.docker_tag_ghcr.outputs.tag }}
-          cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}
-          cache-to: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}
-          secrets: |
-            MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
-            MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
-      - name: Verify multi-arch manifest
+          python .github/workflows/scripts/validate_docker.py ${{ steps.docker_tag_ghcr.outputs.tag }}-arm64 .github/workflows/scripts/jsonschema/docker_image.json
+
+  create-ghcr-manifest:
+    runs-on: ubuntu-latest
+    name: create-ghcr-manifest
+    needs:
+      [
+        dockerfile-changes,
+        build-amd64-jfrog,
+        build-amd64-ghcr,
+        build-arm64-ghcr,
+      ]
+    if: |
+      needs.dockerfile-changes.outputs.docker-images != '[]' &&
+      needs.build-amd64-jfrog.outputs.private_image == 'false'
+    strategy:
+      fail-fast: false
+      matrix:
+        tags:
+          ["${{ fromJson(needs.dockerfile-changes.outputs.docker-images) }}"]
+    steps:
+      - name: Get docker repo name
+        id: docker_repo_name
+        run: echo name=$( dirname "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker version
+        id: docker_repo_version
+        run: echo version=$( basename "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker GHCR tag
+        id: docker_tag_ghcr
+        run: echo tag="${{ env.GHCR_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Create and push multi-arch manifest for GHCR
+        run: |
+          docker buildx imagetools create -t ${{ steps.docker_tag_ghcr.outputs.tag }} \
+            ${{ steps.docker_tag_ghcr.outputs.tag }}-amd64 \
+            ${{ steps.docker_tag_ghcr.outputs.tag }}-arm64
+
+      - name: Verify multi-arch manifest for GHCR
         run: |
           echo "Verifying multi-arch manifest for ${{ steps.docker_repo_name.outputs.name }}:${{ steps.docker_repo_version.outputs.version }}"
-          docker buildx imagetools inspect ${{ steps.docker_tag_jfrog.outputs.tag }} || echo "Jfrog image verification failed"
-          docker buildx imagetools inspect ${{ steps.docker_tag_ghcr.outputs.tag }} || echo "GHCR image verification failed"
+          docker buildx imagetools inspect ${{ steps.docker_tag_ghcr.outputs.tag }}
+
   confirm-pass:
     runs-on: ubuntu-latest
-    needs: [dockerfile-changes, docker-validate-build-and-push, dockerfile-lint]
-    if: always() & ${{ !github.event.act }}
+    needs:
+      [
+        dockerfile-changes,
+        pre-build-verification,
+        build-amd64-jfrog,
+        build-arm64-jfrog,
+        create-jfrog-manifest,
+      ]
+    if: ${{ always() && !github.event.act }}
     steps:
       - name: All tests ok
         if: ${{ success() || !contains(needs.*.result, 'failure') }}
