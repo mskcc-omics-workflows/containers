@@ -30,8 +30,6 @@ on:
         required: false
       MSK_JFROG_TOKEN:
         required: false
-      GITHUB_TOKEN:
-        required: false
     outputs:
       private_image:
         description: "Whether the image is marked as private"
