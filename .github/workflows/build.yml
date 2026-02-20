@@ -85,10 +85,13 @@ jobs:
           username: ${{ secrets.MSK_JFROG_USERNAME }}
           password: ${{ secrets.MSK_JFROG_TOKEN }}
 
-      - name: Log in to GHCR registry
+      - name: Login to GitHub Container Registry
         if: ${{ !inputs.is_jfrog }}
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build image
         uses: docker/build-push-action@v5
         with:
