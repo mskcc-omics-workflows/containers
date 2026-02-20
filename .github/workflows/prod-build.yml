@@ -89,7 +89,7 @@ jobs:
     with:
       tags: ${{ matrix.tags }}
       platform: "amd64"
-      registry: ${{ env.JFROG_CONTAINER_REPO }}
+      registry: "$JFROG_CONTAINER_REPO"
       type_of_run: "prod"
       is_jfrog: true
     secrets:
@@ -109,7 +109,7 @@ jobs:
     with:
       tags: ${{ matrix.tags }}
       platform: "arm64"
-      registry: ${{ env.JFROG_CONTAINER_REPO }}
+      registry: "$JFROG_CONTAINER_REPO"
       type_of_run: "prod"
       is_jfrog: true
     secrets:
@@ -171,7 +171,7 @@ jobs:
     with:
       tags: ${{ matrix.tags }}
       platform: "amd64"
-      registry: ${{ env.GHCR_CONTAINER_REPO }}
+      registry: "$GHCR_CONTAINER_REPO"
       type_of_run: "prod"
       is_jfrog: false
     secrets:
@@ -192,7 +192,7 @@ jobs:
     with:
       tags: ${{ matrix.tags }}
       platform: "arm64"
-      registry: ${{ env.GHCR_CONTAINER_REPO }}
+      registry: "$GHCR_CONTAINER_REPO"
       type_of_run: "prod"
       is_jfrog: false
     secrets:
