@@ -10,11 +10,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-env:
-  JFROG_REGISTRY: mskcc.jfrog.io
-  JFROG_CONTAINER_REPO: mskcc.jfrog.io/omicswf-docker-dev-local/mskcc-omics-workflows
-  GHCR_CONTAINER_REPO: ghcr.io/mskcc-omics-workflows/
-
 jobs:
   dockerfile-changes:
     name: dockerfile-changes
@@ -90,7 +85,7 @@ jobs:
     with:
       tags: ${{ matrix.tags }}
       platform: "amd64"
-      registry: "$JFROG_CONTAINER_REPO"
+      registry: ${{ vars.JFROG_CONTAINER_REPO }}
       type_of_run: "dev"
       is_jfrog: true
     secrets:
@@ -110,7 +105,7 @@ jobs:
     with:
       tags: ${{ matrix.tags }}
       platform: "arm64"
-      registry: "$JFROG_CONTAINER_REPO"
+      registry: ${{ vars.JFROG_CONTAINER_REPO }}
       type_of_run: "dev"
       is_jfrog: true
     secrets:
@@ -136,7 +131,7 @@ jobs:
         run: echo version=$( basename "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
       - name: Get docker tag
         id: docker_tag
-        run: echo tag="${{ env.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
+        run: echo tag="${{ vars.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -144,7 +139,7 @@ jobs:
       - name: Log in to JFrog Artifactory
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.JFROG_REGISTRY }}
+          registry: ${{ vars.JFROG_REGISTRY }}
           username: ${{ secrets.MSK_JFROG_USERNAME }}
           password: ${{ secrets.MSK_JFROG_TOKEN }}
 
