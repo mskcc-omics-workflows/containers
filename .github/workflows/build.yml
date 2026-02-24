@@ -1,0 +1,158 @@
+name: "Build and push"
+
+on:
+  workflow_call:
+    inputs:
+      tags:
+        description: "Tags of the image file to build"
+        required: true
+        type: string
+      platform:
+        description: "Platform of the image to build"
+        required: true
+        type: string
+      registry:
+        description: "Registry to push the image to"
+        required: true
+        type: string
+      type_of_run:
+        description: "Type of run (dev or prod)"
+        required: true
+        type: string
+        default: "dev"
+      is_jfrog:
+        description: "Whether the registry is JFrog Artifactory"
+        required: true
+        type: boolean
+        default: true
+    secrets:
+      MSK_JFROG_USERNAME:
+        required: false
+      MSK_JFROG_TOKEN:
+        required: false
+    outputs:
+      private_image:
+        description: "Whether the image is marked as private"
+        value: ${{ jobs.build-and-push.outputs.private_image }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    outputs:
+      private_image: ${{ steps.check_private.outputs.private_image }}
+    steps:
+      # save docker files
+      - name: Move /var/lib/docker/
+        if: ${{ !github.event.act }}
+        run: sudo mv /var/lib/docker/ "${GITHUB_WORKSPACE}/docker"
+      - name: Maximize build space
+        if: ${{ !github.event.act }}
+        uses: easimon/maximize-build-space@master
+        with:
+          build-mount-path: /var/lib/docker/
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+      - name: Restore /var/lib/docker/
+        if: ${{ !github.event.act }}
+        run: |
+          sudo rsync -aPq "${GITHUB_WORKSPACE}/docker/" /var/lib/docker
+          sudo rm -rf "${GITHUB_WORKSPACE}/docker"
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get docker repo name
+        id: docker_repo_name
+        run: echo name=$( dirname "${{ inputs.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker version
+        id: docker_repo_version
+        run: echo version=$( basename "${{ inputs.tags }}" ) >> $GITHUB_OUTPUT
+      - name: Get docker tag
+        id: docker_tag
+        run: echo tag="${{ inputs.registry }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to JFrog Artifactory
+        if: ${{ inputs.is_jfrog }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ secrets.MSK_JFROG_USERNAME }}
+          password: ${{ secrets.MSK_JFROG_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        if: ${{ !inputs.is_jfrog }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build image
+        uses: docker/build-push-action@v5
+        with:
+          context: containers/${{ inputs.tags }}/
+          file: containers/${{ inputs.tags }}/Dockerfile
+          platforms: linux/${{ inputs.platform  }}
+          tags: ${{ steps.docker_tag.outputs.tag }}-${{ inputs.platform }}
+          cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}-${{ inputs.type_of_run }}-${{ inputs.platform }}
+          cache-to: type=gha,mode=min,scope=${{ steps.docker_repo_name.outputs.name }}-${{ inputs.type_of_run }}-${{ inputs.platform }}
+          secrets: |
+            MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
+            MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
+          load: true
+
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
+        with:
+          python-version: "3.12"
+      - name: Install pip
+        run: python -m pip install --upgrade pip
+      - name: Install python docker package
+        run: pip install docker jsonschema
+
+      - name: Validate image build metadata
+        run: |
+          python .github/workflows/scripts/validate_docker.py ${{ steps.docker_tag.outputs.tag }}-${{ inputs.platform }} .github/workflows/scripts/jsonschema/docker_image.json
+      - name: Test image build
+        run: |
+          docker run --rm ${{ steps.docker_tag.outputs.tag }}-${{ inputs.platform }} echo "Image build successful"
+      - name: Get privacy tag
+        id: check_private
+        run: |
+          if [ $(docker image inspect ${{ steps.docker_tag.outputs.tag }}-${{ inputs.platform }} | grep -ic "\"imageprivacy\": \"true\"") -gt 0 ] ; then
+              echo "private_image=true" >> $GITHUB_OUTPUT
+              echo "Image is marked as PRIVATE (imageprivacy=true)"
+          else
+              echo "private_image=false" >> $GITHUB_OUTPUT
+              echo "Image is PUBLIC (imageprivacy not set or false)"
+          fi
+
+      - name: Notify if private image and GHCR registry
+        if: |
+          steps.check_private.outputs.private_image == 'true' &&
+          !inputs.is_jfrog
+        run: |
+          echo "⚠️  Image ${{ inputs.tags }} is marked as PRIVATE - SKIPPING push to GHCR"
+          echo "Private images should only be pushed to JFrog Artifactory"
+
+      - name: Push image to registry
+        if: |
+          inputs.is_jfrog ||
+          steps.check_private.outputs.private_image == 'false'
+        uses: docker/build-push-action@v5
+        with:
+          context: containers/${{ inputs.tags }}/
+          file: containers/${{ inputs.tags }}/Dockerfile
+          platforms: linux/${{ inputs.platform  }}
+          tags: ${{ steps.docker_tag.outputs.tag }}-${{ inputs.platform }}
+          cache-from: type=gha,scope=${{ steps.docker_repo_name.outputs.name }}-${{ inputs.type_of_run }}-${{ inputs.platform }}
+          cache-to: type=gha,mode=min,scope=${{ steps.docker_repo_name.outputs.name }}-${{ inputs.type_of_run }}-${{ inputs.platform }}
+          secrets: |
+            MSK_JFROG_USERNAME=${{ secrets.MSK_JFROG_USERNAME }}
+            MSK_JFROG_TOKEN=${{ secrets.MSK_JFROG_TOKEN }}
+          push: true
