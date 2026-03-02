@@ -33,8 +33,7 @@ RUN apt-get -y update \
       xvfb xauth xfonts-base xdg-utils inotify-tools \
       python3 python3-pip python3-dev \
       ca-certificates fontconfig \
- && set -o pipefail \
- && echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections \
+ && debconf-set-selections <<< "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" \
  && apt-get install -y --no-install-recommends ttf-mscorefonts-installer \
  && fc-cache -vr \
  # ---------- R packages ----------
