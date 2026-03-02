@@ -44,39 +44,39 @@ RUN apt-get -y update \
 # ---------- htslib + htstools ----------
 From builder as download_and_unpack
 WORKDIR /tmp
-RUN wget -q https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSION}/htslib-${HTSLIB_VERSION}.tar.bz2 \
- && wget -q https://github.com/mskcc/htstools/archive/snp_pileup_${HTSTOOLS_VERSION}.tar.gz \
- && wget -q https://github.com/mskcc/facets/archive/v${FACETS_VERSION}.tar.gz -O facets-v${FACETS_VERSION}.tar.gz \
- && wget -q https://github.com/mskcc/pctGCdata/archive/v${PCTGCDATA}.tar.gz -O pctGCdata-v${PCTGCDATA}.tar.gz \
- && wget -q https://github.com/mskcc/facets-suite/archive/${FACETS_SUITE_VERSION}.tar.gz -O facets-suite-${FACETS_SUITE_VERSION}.tar.gz \
+RUN wget -q "https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSION}/htslib-${HTSLIB_VERSION}.tar.bz2" \
+ && wget -q "https://github.com/mskcc/htstools/archive/snp_pileup_${HTSTOOLS_VERSION}.tar.gz" \
+ && wget -q "https://github.com/mskcc/facets/archive/v${FACETS_VERSION}.tar.gz" -O "facets-v${FACETS_VERSION}.tar.gz" \
+ && wget -q "https://github.com/mskcc/pctGCdata/archive/v${PCTGCDATA}.tar.gz" -O "pctGCdata-v${PCTGCDATA}.tar.gz" \
+ && wget -q "https://github.com/mskcc/facets-suite/archive/${FACETS_SUITE_VERSION}.tar.gz" -O "facets-suite-${FACETS_SUITE_VERSION}.tar.gz" \
  && git clone --single-branch --branch master https://github.com/mskcc/facets-preview.git facets-preview-master \
- && tar xjf htslib-${HTSLIB_VERSION}.tar.bz2 \
- && tar xzf snp_pileup_${HTSTOOLS_VERSION}.tar.gz \
- && tar xzf facets-v${FACETS_VERSION}.tar.gz \
- && tar xzf pctGCdata-v${PCTGCDATA}.tar.gz \
- && tar xzf facets-suite-${FACETS_SUITE_VERSION}.tar.gz
+ && tar xjf "htslib-${HTSLIB_VERSION}.tar.bz2" \
+ && tar xzf "snp_pileup_${HTSTOOLS_VERSION}.tar.gz" \
+ && tar xzf "facets-v${FACETS_VERSION}.tar.gz" \
+ && tar xzf "pctGCdata-v${PCTGCDATA}.tar.gz" \
+ && tar xzf "facets-suite-${FACETS_SUITE_VERSION}.tar.gz"
 
 From download_and_unpack as htslib_builder
-WORKDIR /tmp/htslib-${HTSLIB_VERSION}
+WORKDIR "/tmp/htslib-${HTSLIB_VERSION}"
 RUN ./configure \
  && make \
  && make install \
  && cp libhts.so* /usr/lib
 
 FROM htslib_builder as htstools_builder
-WORKDIR /tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}
+WORKDIR "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}"
  RUN g++ -std=c++11 snp-pileup.cpp -lhts -o snp-pileup \
  && g++ -std=c++11 ppflag-fixer.cpp -lhts -o ppflag-fixer
 
 # ---------- FACETS + pctGCdata + facets-suite 2.0.10 ----------
 From htstools_builder as pctgcdata_builder
-WORKDIR /tmp/pctGCdata-${PCTGCDATA}
+WORKDIR "/tmp/pctGCdata-${PCTGCDATA}"
  RUN R CMD INSTALL .
 From pctgcdata_builder as facets_builder
-WORKDIR /tmp/facets-${FACETS_VERSION}
+WORKDIR "/tmp/facets-${FACETS_VERSION}"
  RUN R CMD INSTALL .
 From facets_builder as facets_suite_builder
-WORKDIR /tmp/facets-suite-${FACETS_SUITE_VERSION}
+WORKDIR "/tmp/facets-suite-${FACETS_SUITE_VERSION}"
  RUN R CMD INSTALL .
 From facets_suite_builder as facets_preview_builder
 WORKDIR /tmp/facets-preview-master
@@ -86,9 +86,9 @@ WORKDIR /tmp/facets-preview-master
  
 # ---------- final image ----------
 FROM facets_preview_builder as final
-COPY /tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup /usr/bin
-COPY /tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer /usr/bin
-COPY /tmp/facets-suite-${FACETS_SUITE_VERSION}/ /usr/bin/facets-suite/
+COPY "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup" /usr/bin/
+COPY "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer" /usr/bin/
+COPY "/tmp/facets-suite-${FACETS_SUITE_VERSION}/" /usr/bin/facets-suite/
 COPY /tmp/facets-preview-master/ /usr/bin/facets-preview/
 # Clean up
 RUN apt-get clean \
