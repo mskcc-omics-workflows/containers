@@ -1,4 +1,4 @@
-FROM rocker/tidyverse:3.6.3 as builder
+FROM rocker/tidyverse:3.6.3 AS builder
 
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="Adam Price (price2@mskcc.org), Nikhil Kumar (kumarn1@mskcc.org), Anne Marie Noronha (noronhaa@mskcc.org), John Orgera (orgeraj@mskcc.org), Yixiao Gong (gongy@mskcc.org), Philip Jonsson (jonssonp@mskcc.org)" \
@@ -44,7 +44,7 @@ RUN apt-get -y update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 # ---------- htslib + htstools ----------
-From builder as download_and_unpack
+From builder AS download_and_unpack
 WORKDIR /tmp
 RUN wget -q "https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSION}/htslib-${HTSLIB_VERSION}.tar.bz2" \
  && wget -q "https://github.com/mskcc/htstools/archive/snp_pileup_${HTSTOOLS_VERSION}.tar.gz" \
@@ -59,7 +59,7 @@ RUN wget -q "https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSI
  && tar xzf "facets-suite-${FACETS_SUITE_VERSION}.tar.gz"
 
 # hadolint ignore=DL3006,DL3049
-From download_and_unpack as htslib_builder
+From download_and_unpack AS htslib_builder
 WORKDIR "/tmp/htslib-${HTSLIB_VERSION}"
 RUN ./configure \
  && make \
@@ -67,26 +67,26 @@ RUN ./configure \
  && cp libhts.so* /usr/lib
 
 # hadolint ignore=DL3006,DL3049
-FROM htslib_builder as htstools_builder
+FROM htslib_builder AS htstools_builder
 WORKDIR "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}"
  RUN g++ -std=c++11 snp-pileup.cpp -lhts -o snp-pileup \
  && g++ -std=c++11 ppflag-fixer.cpp -lhts -o ppflag-fixer
 
 # ---------- FACETS + pctGCdata + facets-suite 2.0.10 ----------
 # hadolint ignore=DL3006,DL3049
-From htstools_builder as pctgcdata_builder
+From htstools_builder AS pctgcdata_builder
 WORKDIR "/tmp/pctGCdata-${PCTGCDATA}"
 RUN R CMD INSTALL .
 # hadolint ignore=DL3006,DL3049
-From pctgcdata_builder as facets_builder
+From pctgcdata_builder AS facets_builder
 WORKDIR "/tmp/facets-${FACETS_VERSION}"
 RUN R CMD INSTALL .
 # hadolint ignore=DL3006,DL3049
-From facets_builder as facets_suite_builder
+From facets_builder AS facets_suite_builder
 WORKDIR "/tmp/facets-suite-${FACETS_SUITE_VERSION}"
 RUN R CMD INSTALL .
 # hadolint ignore=DL3006,DL3049
-From facets_suite_builder as facets_preview_builder
+From facets_suite_builder AS facets_preview_builder
 WORKDIR /tmp/facets-preview-master
 RUN mkdir -p inst/facets_qc \
  && cp -r facets_qc/* inst/facets_qc/ \
@@ -94,7 +94,7 @@ RUN mkdir -p inst/facets_qc \
  
 # ---------- final image ----------
 # hadolint ignore=DL3006,DL3049
-FROM facets_preview_builder as final
+FROM facets_preview_builder AS final
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup" /usr/bin/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer" /usr/bin/
 COPY --from=facets_suite_builder "/tmp/facets-suite-${FACETS_SUITE_VERSION}/" /usr/bin/facets-suite/
