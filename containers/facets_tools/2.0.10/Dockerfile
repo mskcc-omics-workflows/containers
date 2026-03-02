@@ -41,7 +41,8 @@ RUN apt-get -y update \
  && R -e "options(repos=c(CRAN='https://packagemanager.posit.co/cran/__linux__/bionic/2025-06-01')); install.packages(c('Cairo','argparse','gridExtra','binom','BiocManager','diptest','egg','shiny','shinyWidgets','shinyjs','rhandsontable','doParallel','configr','R.utils','shinyFiles','here','dplyr','httr','jsonlite'), Ncpus=parallel::detectCores())" \
  && R -e "options(repos=c(CRAN='https://packagemanager.posit.co/cran/__linux__/bionic/2025-06-01')); BiocManager::install('rtracklayer', ask=FALSE, update=FALSE)" \
  && R -q -e "install.packages('remotes', repos='https://cloud.r-project.org')" \
- && R -q -e "remotes::install_version('bslib', version='0.7.0', repos='https://cloud.r-project.org')"
+ && R -q -e "remotes::install_version('bslib', version='0.7.0', repos='https://cloud.r-project.org')" \
+ && apt-get clean
 # ---------- htslib + htstools ----------
 From builder as download_and_unpack
 WORKDIR /tmp
