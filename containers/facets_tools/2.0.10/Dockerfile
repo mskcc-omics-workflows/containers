@@ -60,6 +60,7 @@ RUN wget -q "https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSI
  && tar xzf "pctGCdata-v${PCTGCDATA}.tar.gz" \
  && tar xzf "facets-suite-${FACETS_SUITE_VERSION}.tar.gz"
 
+# hadolint ignore=DL3006,DL3049
 From download_and_unpack as htslib_builder
 WORKDIR "/tmp/htslib-${HTSLIB_VERSION}"
 RUN ./configure \
@@ -67,28 +68,34 @@ RUN ./configure \
  && make install \
  && cp libhts.so* /usr/lib
 
+# hadolint ignore=DL3006,DL3049
 FROM htslib_builder as htstools_builder
 WORKDIR "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}"
  RUN g++ -std=c++11 snp-pileup.cpp -lhts -o snp-pileup \
  && g++ -std=c++11 ppflag-fixer.cpp -lhts -o ppflag-fixer
 
 # ---------- FACETS + pctGCdata + facets-suite 2.0.10 ----------
+# hadolint ignore=DL3006,DL3049
 From htstools_builder as pctgcdata_builder
 WORKDIR "/tmp/pctGCdata-${PCTGCDATA}"
- RUN R CMD INSTALL .
+RUN R CMD INSTALL .
+# hadolint ignore=DL3006,DL3049
 From pctgcdata_builder as facets_builder
 WORKDIR "/tmp/facets-${FACETS_VERSION}"
- RUN R CMD INSTALL .
+RUN R CMD INSTALL .
+# hadolint ignore=DL3006,DL3049
 From facets_builder as facets_suite_builder
 WORKDIR "/tmp/facets-suite-${FACETS_SUITE_VERSION}"
- RUN R CMD INSTALL .
+RUN R CMD INSTALL .
+# hadolint ignore=DL3006,DL3049
 From facets_suite_builder as facets_preview_builder
 WORKDIR /tmp/facets-preview-master
- RUN mkdir -p inst/facets_qc \
+RUN mkdir -p inst/facets_qc \
  && cp -r facets_qc/* inst/facets_qc/ \
  && R CMD INSTALL .
  
 # ---------- final image ----------
+# hadolint ignore=DL3006,DL3049
 FROM facets_preview_builder as final
 COPY "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup" /usr/bin/
 COPY "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer" /usr/bin/
