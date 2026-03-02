@@ -42,7 +42,7 @@ RUN apt-get -y update \
  && R -q -e "install.packages('remotes', repos='https://cloud.r-project.org')" \
  && R -q -e "remotes::install_version('bslib', version='0.7.0', repos='https://cloud.r-project.org')" \
  && apt-get clean \
- && rm -rf /var/lib/apt/lists/* \
+ && rm -rf /var/lib/apt/lists/*
 # ---------- htslib + htstools ----------
 From builder as download_and_unpack
 WORKDIR /tmp
