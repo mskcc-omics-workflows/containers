@@ -23,7 +23,11 @@ ENV FACETS_OVERRIDE_EXITCODE=set
 ENV LANG=C.UTF-8
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # ---------- system deps ----------
-RUN apt-get -y update \
+RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list \
+ && sed -i 's|security.debian.org|archive.debian.org|g' /etc/apt/sources.list \
+ && sed -i '/stretch-updates/d' /etc/apt/sources.list \
+ && sed -i '/buster-updates/d' /etc/apt/sources.list \
+ && apt-get -y update \
  && apt-get -y upgrade \
  && apt-get install -y --no-install-recommends \
       apt-utils nano wget git \
