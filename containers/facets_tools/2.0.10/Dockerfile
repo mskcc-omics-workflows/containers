@@ -95,10 +95,10 @@ RUN mkdir -p inst/facets_qc \
 # ---------- final image ----------
 # hadolint ignore=DL3006,DL3049
 FROM facets_preview_builder as final
-COPY "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup" /usr/bin/
-COPY "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer" /usr/bin/
-COPY "/tmp/facets-suite-${FACETS_SUITE_VERSION}/" /usr/bin/facets-suite/
-COPY /tmp/facets-preview-master/ /usr/bin/facets-preview/
+COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup" /usr/bin/
+COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer" /usr/bin/
+COPY --from=facets_suite_builder "/tmp/facets-suite-${FACETS_SUITE_VERSION}/" /usr/bin/facets-suite/
+COPY --from=facets_preview_builder "/tmp/facets-preview-master/" /usr/bin/facets-preview/
 # Clean up
 RUN apt-get clean \
     && apt-get purge \
