@@ -27,6 +27,10 @@ RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list \
  && sed -i 's|security.debian.org|archive.debian.org|g' /etc/apt/sources.list \
  && sed -i '/stretch-updates/d' /etc/apt/sources.list \
  && sed -i '/buster-updates/d' /etc/apt/sources.list \
+ # 1. Enable 'contrib' and 'non-free' on your archive mirrors
+ && sed -i 's/main$/main contrib non-free/' /etc/apt/sources.list \
+ # 2. Pre-accept the Microsoft EULA for non-interactive install
+ && echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections \
  && apt-get -y update \
  && apt-get -y upgrade \
  && apt-get install -y --no-install-recommends \
