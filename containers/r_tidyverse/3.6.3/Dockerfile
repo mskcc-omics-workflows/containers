@@ -1,5 +1,5 @@
 # Build R 3.6.3 from source + install all R packages
-FROM ubuntu:22.04 AS BASE
+FROM ubuntu:22.04 AS base
 
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="Nikhil Kumar (kumarn1@mskcc.org)" \
@@ -91,7 +91,7 @@ RUN apt-get update -qq \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-    FROM BASE as BUILD_R
+    FROM base AS build_r
     WORKDIR "/tmp/R-${R_VERSION}"
     RUN R_PAPERSIZE=letter \
        R_BATCHSAVE="--no-save --no-restore" \
@@ -131,7 +131,7 @@ RUN apt-get update -qq \
     && apt-get autoclean -y \
     && rm -rf /var/lib/apt/lists/*
 
-FROM BUILD_R as FINAL
+FROM build_r AS final
 WORKDIR "/"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update -qq \
