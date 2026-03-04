@@ -173,7 +173,7 @@ RUN apt-get update -qq \
     && R -e " \
     options(repos=c(CRAN='https://packagemanager.posit.co/cran/__linux__/focal/2025-06-01')); \
     BiocManager::install('rtracklayer', ask=FALSE, update=FALSE)" \
-    && R -q -e "remotes::install_version('bslib', version='0.7.0', repos='https://cloud.r-project.org')"
+    && R -q -e "remotes::install_version('bslib', version='0.7.0', repos='https://cloud.r-project.org')" \
     && apt-get install -y --no-install-recommends ttf-mscorefonts-installer \
     && fc-cache -vr \
     && apt-get clean \
