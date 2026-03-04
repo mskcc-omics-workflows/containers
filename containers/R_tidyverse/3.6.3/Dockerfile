@@ -8,7 +8,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.version="3.6.3" \
       imageprivacy="False" \
       org.opencontainers.image.source="https://github.com/mskcc-omics-workflows/containers/containers/R_tidyverse/" \
-      org.opencontainers.image.url="" \
+      org.opencontainers.image.url="https://tidyverse.org/" \
       org.opencontainers.image.title="Modernized R Tidyverse 3.6.3" \
       org.opencontainers.image.description="Modernized R Tidyverse 3.6.3 with an updated base image"
 
@@ -85,10 +85,11 @@ RUN apt-get update -qq \
         zlib1g-dev \
     " \
     && apt-get update -qq \
-    && apt-get install -y --no-install-recommends $BUILDDEPS \
-    && cd /tmp \
+    && apt-get install -y --no-install-recommends "$BUILDDEPS" \
     && curl -fsSL "https://cran.r-project.org/src/base/R-3/R-${R_VERSION}.tar.gz" -o "/tmp/R-${R_VERSION}.tar.gz" \
-    && tar -xf "/tmp/R-${R_VERSION}.tar.gz"
+    && tar -xf "/tmp/R-${R_VERSION}.tar.gz" \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
     FROM BASE as BUILD_R
     WORKDIR "/tmp/R-${R_VERSION}"
@@ -124,14 +125,15 @@ RUN apt-get update -qq \
     && echo "R_LIBS=\${R_LIBS-'/usr/local/lib/R/site-library:/usr/local/lib/R/library:/usr/lib/R/library'}" >> /usr/local/lib/R/etc/Renviron \
     && echo 'if(is.na(Sys.getenv("HTTR_LOCALHOST", unset=NA))) { options(httr_oob_default = TRUE) }' \
         >> /usr/local/lib/R/etc/Rprofile.site \
-    && cd / && rm -rf /tmp/* \
-    && apt-get remove --purge -y $BUILDDEPS \
+    && apt-get remove --purge -y "$BUILDDEPS" \
+    && rm -rf /tmp/* \
     && apt-get autoremove -y \
     && apt-get autoclean -y \
     && rm -rf /var/lib/apt/lists/*
 
 FROM BUILD_R as FINAL
 WORKDIR "/"
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends \
         apt-utils \
