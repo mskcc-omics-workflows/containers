@@ -14,6 +14,8 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       --mount=type=secret,id=MSK_JFROG_TOKEN \
       set -eux && apt-get update -y && \
