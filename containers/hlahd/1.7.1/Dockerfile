@@ -21,6 +21,7 @@ RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       set -eux && apt-get update -y && \
       # Install packages
       apt-get install --no-install-recommends -y \
+      ca-certificates \
       build-essential \
       g++ \
       perl \
