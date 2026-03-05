@@ -14,6 +14,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PHYLOWGS_TAG="v1.5-msk"
+ARG TARGETPLATFORM
 
 RUN apt-get update -y \
       # Install packages
