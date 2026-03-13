@@ -106,9 +106,8 @@ RUN R_PAPERSIZE=letter \
         --disable-nls \
         --with-recommended-packages \
     && make -j"$(nproc)" \
-    && make install
-
-RUN mkdir -p /usr/local/lib/R/site-library \
+    && make install \
+    && mkdir -p /usr/local/lib/R/site-library \
     && chown root:staff /usr/local/lib/R/site-library \
     && chmod g+ws /usr/local/lib/R/site-library \
     && sed -i '/^R_LIBS_USER=.*$/d' /usr/local/lib/R/etc/Renviron \
@@ -130,27 +129,23 @@ RUN mkdir -p /usr/local/lib/R/site-library \
     && echo 'CXX14FLAGS = -g -O2 -fstack-protector-strong -Wformat' \
         >> /usr/local/lib/R/etc/Makevars.site \
     && echo "MAKEFLAGS = -j$(nproc)" \
-        >> /usr/local/lib/R/etc/Makevars.site
-
-RUN R -e " \
+        >> /usr/local/lib/R/etc/Makevars.site \
+    && R -e " \
     options(repos = c(CRAN = Sys.getenv('CRAN_MIRROR'))); \
-    install.packages('tidyverse', version = '1.3.1', type = 'source')"
-
-RUN R -e " \
+    install.packages('tidyverse', version = '1.3.1', type = 'source')" \
+    && R -e " \
     options(repos = c(CRAN = Sys.getenv('CRAN_MIRROR'))); \
     install.packages(c( \
         'devtools', 'remotes', 'formatR', 'caTools', \
         'Cairo', 'argparse', 'gridExtra', 'binom', 'egg', \
         'shiny', 'shinyWidgets', 'shinyjs', 'rhandsontable', \
         'doParallel', 'R.utils', 'shinyFiles', 'here', 'configr' \
-    ), type = 'source')"
-
-RUN R -e " \
+    ), type = 'source')" \
+    && R -e " \
     if (!requireNamespace('configr', quietly = TRUE)) { \
         remotes::install_github('Miachol/configr') \
-    }"
-
-RUN R -e " \
+    }" \
+    && R -e " \
     options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/jammy/2022-12-01')); \
     install.packages('BiocManager', type = 'source'); \
     BiocManager::install(version = '3.10', ask = FALSE); \
@@ -162,12 +157,11 @@ RUN R -e " \
         -exec rm -rf {} + \
     && rm -rf /usr/local/src/R-3.6.3
 
-# =============================================================================
-# Stage 3: final
-# =============================================================================
 FROM base AS final
 
 WORKDIR /
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends \
@@ -228,11 +222,11 @@ RUN apt-get update -qq \
     && fc-cache -vr \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
- 
+
 COPY --from=builder /usr/local/bin/R       /usr/local/bin/R
 COPY --from=builder /usr/local/bin/Rscript /usr/local/bin/Rscript
 COPY --from=builder /usr/local/lib/R       /usr/local/lib/R
- 
+
 RUN mkdir -p /usr/local/lib/R/site-library \
     && chown root:staff /usr/local/lib/R/site-library \
     && chmod g+ws /usr/local/lib/R/site-library \
