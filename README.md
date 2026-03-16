@@ -84,3 +84,15 @@ act \
     --workflows .github/workflows/dev-build.yml
 ```
 The `-s` parameters indicate "secrets" that are needed in the environment of the workflow. Certain steps may fail without them. Currently only `.github/workflows/dev-build.yml` has been properly enabled with `act`, but `.github/workflows/prod-build.yml` is not.
+
+## Multi arch build
+
+Images are built for linux/amd64 and linux/arm64 using Docker Buildx. BuildKit automatically injects two useful build arguments: `BUILDPLATFORM`, the platform of the machine running the build, and `TARGETPLATFORM`, the platform the image is being built for. A common pattern is to use BUILDPLATFORM in build stages to avoid slow cross-compiled tooling — for example, always running the Go compiler on the native host architecture for speed — while using TARGETPLATFORM to ensure the final binary targets the correct architecture:
+
+```
+FROM --platform=$BUILDPLATFORM golang:1.22 AS builder
+ARG TARGETPLATFORM
+RUN GOARCH=$(echo $TARGETPLATFORM | cut -d'/' -f2) go build -o app .
+
+FROM --platform=$TARGETPLATFORM alpine:3.19
+COPY --from=builder /app /app
