@@ -1,4 +1,4 @@
-# containers
+# Containers
 Mono-repository for custom docker containers used in nextflow modules
 
 For further information on how to contribute or use images in this repository, visit our [Gitbook documentation](https://mskcc-omics-workflows.gitbook.io/omics-wf/GMaCKqX0TmAhUOoZmuc6/image-management)
@@ -11,9 +11,13 @@ Each Dockerfile should be saved within a specific folder structure:
 containers/<softwarename>/<version>/Dockerfile
 ```
 
-Any custom scripts or resource files that are included in the image or required for building the image should be contained in the same folder as the Dockerfile. When you open a pull request for the container, an image will be automatically created and be labeled `$REGISTRY/<softwarename>:version`
+Any custom scripts or resource files that are included in the image or required for building the image should be contained in the same folder as the Dockerfile. 
+> [!NOTE]
+> When you open a pull request for the container, an image will be automatically created and be labeled `$REGISTRY/<softwarename>-<platform>:<version>`
+Each image is built on automatically for both platforms (arm64 & amd64) for greater compatability. This optimization is handled in the background, a manifest is generated so the right platform is automatically selected when you pull from `$REGISTRY/<softwarename>:<version>`
 
-The version of the image should correspond to the version of the software it contains. If the image has multiple independent software packages, the image version should start at 0.1.0 and increment in accordance with [Semantic Versioning](https://semver.org/#semantic-versioning-200).
+> [!TIP]
+> The version of the image should correspond to the version of the software it contains. If the image has multiple independent software packages, the image version should start at 0.1.0 and increment in accordance with [Semantic Versioning](https://semver.org/#semantic-versioning-200).
 
 ## Image repository
 
