@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.licenses="ACADEMIC SOFTWARE LICENSE AGREEMENT" \
       org.opencontainers.image.version="3.6.3" \
       imageprivacy="False" \
-      org.opencontainers.image.source="https://github.com/mskcc-omics-workflows/containers/containers/R_tidyverse/" \
+      org.opencontainers.image.source="https://github.com/mskcc-omics-workflows/containers/containers/r_tidyverse/" \
       org.opencontainers.image.url="https://tidyverse.org/" \
       org.opencontainers.image.title="Modernized R Tidyverse 3.6.3" \
       org.opencontainers.image.description="Modernized R Tidyverse 3.6.3 with an updated base image"
@@ -82,7 +82,7 @@ RUN curl -fsSL "https://cran.r-project.org/src/base/R-3/R-${R_VERSION}.tar.gz" \
     && tar -xf "/tmp/R-${R_VERSION}.tar.gz" -C /usr/local/src/ \
     && rm "/tmp/R-${R_VERSION}.tar.gz"
 
-WORKDIR /usr/local/src/R-3.6.3
+WORKDIR /usr/local/src/R-${R_VERSION}
 
 RUN R_PAPERSIZE=letter \
     R_BATCHSAVE="--no-save --no-restore" \
@@ -132,7 +132,7 @@ RUN R_PAPERSIZE=letter \
         >> /usr/local/lib/R/etc/Makevars.site \
     && R -e " \
     options(repos = c(CRAN = Sys.getenv('CRAN_MIRROR'))); \
-    install.packages('tidyverse', version = '1.3.1', type = 'source')" \
+    install.packages('tidyverse', type = 'source')" \
     && R -e " \
     options(repos = c(CRAN = Sys.getenv('CRAN_MIRROR'))); \
     install.packages(c( \
@@ -142,11 +142,7 @@ RUN R_PAPERSIZE=letter \
         'doParallel', 'R.utils', 'shinyFiles', 'here', 'configr' \
     ), type = 'source')" \
     && R -e " \
-    if (!requireNamespace('configr', quietly = TRUE)) { \
-        remotes::install_github('Miachol/configr') \
-    }" \
-    && R -e " \
-    options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/jammy/2022-12-01')); \
+    options(repos = c(CRAN = Sys.getenv('CRAN_MIRROR'))); \
     install.packages('BiocManager', type = 'source'); \
     BiocManager::install(version = '3.10', ask = FALSE); \
     BiocManager::install('rtracklayer', ask = FALSE, update = FALSE)" \
@@ -155,7 +151,7 @@ RUN R_PAPERSIZE=letter \
     && find /usr/local/lib/R/library -mindepth 2 -maxdepth 2 \
         -type d \( -name help -o -name doc -o -name tests -o -name demo \) \
         -exec rm -rf {} + \
-    && rm -rf /usr/local/src/R-3.6.3
+    && rm -rf /usr/local/src/R-${R_VERSION}
 
 FROM base AS final
 
