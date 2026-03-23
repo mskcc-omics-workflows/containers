@@ -14,6 +14,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NEOANTIGEN_EDITING_TAG 1.3
+ARG TARGETPLATFORM
 
 RUN apt-get update -y \
       # Install packages
