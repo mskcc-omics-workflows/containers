@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS builder
+FROM ghcr.io/mskcc-omics-workflows/r_tidyverse:3.6.3 AS runtime_base
 
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="Adam Price (price2@mskcc.org), Nikhil Kumar (kumarn1@mskcc.org), Anne Marie Noronha (noronhaa@mskcc.org), John Orgera (orgeraj@mskcc.org), Yixiao Gong (gongy@mskcc.org), Philip Jonsson (jonssonp@mskcc.org)" \
@@ -11,75 +11,48 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.title="Facets Tools" \
       org.opencontainers.image.description="Suite of Facets tools for copy number analysis"
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV HTSLIB_VERSION=1.5
-ENV HTSTOOLS_VERSION=0.1.1
-ENV FACETS_SUITE_VERSION=2.0.10
-ENV FACETS_VERSION=0.5.14
-ENV PCTGCDATA=0.3.0
-ENV SNP_PILEUP=/usr/bin/snp-pileup
-ENV PYTHONNOUSERSITE=set
-ENV FACETS_OVERRIDE_EXITCODE=set
-ENV LANG=C.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive \
+    HTSLIB_VERSION=1.5 \
+    HTSTOOLS_VERSION=0.1.1 \
+    FACETS_SUITE_VERSION=2.0.10 \
+    FACETS_VERSION=0.5.14 \
+    PCTGCDATA=0.3.0 \
+    SNP_PILEUP=/usr/bin/snp-pileup \
+    PYTHONNOUSERSITE=set \
+    FACETS_OVERRIDE_EXITCODE=set \
+    LANG=C.UTF-8
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# ---------- R 3.6.3 + system deps ----------
-# Add CRAN repo for R 3.6 on Focal (Posit signs packages for focal)
 RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends \
-        software-properties-common \
-        dirmngr \
-        gnupg \
-        apt-transport-https \
         ca-certificates \
         wget \
-    && wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
-        | gpg --dearmor -o /usr/share/keyrings/r-project.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu focal-cran35/" \
-        > /etc/apt/sources.list.d/r-cran.list \
-    && apt-get update -qq \
-    # Pin R to exactly 3.6.3
-    && apt-get install -y --no-install-recommends \
-        r-base=3.6.3-1.2004.0 \
-        r-base-dev=3.6.3-1.2004.0 \
-        r-recommended=3.6.3-1.2004.0 \
-    # tidyverse-equivalent system libraries
-    && apt-get install -y --no-install-recommends \
-        libxml2-dev \
-        libcurl4-openssl-dev \
-        libssl-dev \
-        libpq-dev \
-        libssh2-1-dev \
-        unixodbc-dev \
-        libsasl2-dev \
-        libmariadb-dev \
-    && apt-get install -y --no-install-recommends \
-        apt-utils nano git \
-        g++ tar bzip2 \
-        libbz2-dev libc6-dev libxt-dev liblzma-dev \
-        libgtk2.0-dev libcairo2-dev \
-        xvfb xauth xfonts-base xdg-utils inotify-tools \
-        python3 python3-pip python3-dev \
-        fontconfig \
-    # MS Core Fonts
-    && echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections \
-    && apt-get install -y --no-install-recommends ttf-mscorefonts-installer \
-    && fc-cache -vr \
-    # ---------- tidyverse + R packages ----------
-    && R -e "options(repos=c(CRAN='https://packagemanager.posit.co/cran/__linux__/focal/2025-06-01')); \
-        install.packages(c('tidyverse','dplyr','devtools','remotes','formatR','selectr','caTools','BiocManager', \
-        'Cairo','argparse','gridExtra','binom','diptest','egg','shiny','shinyWidgets','shinyjs', \
-        'rhandsontable','doParallel','configr','R.utils','shinyFiles','here','httr','jsonlite'), \
-        Ncpus=parallel::detectCores())" \
-    && R -e "options(repos=c(CRAN='https://packagemanager.posit.co/cran/__linux__/focal/2025-06-01')); \
-        BiocManager::install('rtracklayer', ask=FALSE, update=FALSE)" \
-    && R -q -e "remotes::install_version('bslib', version='0.7.0', repos='https://cloud.r-project.org')" \
+        git \
+        python3 \
+        python3-pip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# ---------- htslib + htstools ----------
-FROM builder AS download_and_unpack
+FROM runtime_base AS build_base
+
+RUN apt-get update -qq \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        tar \
+        bzip2 \
+        gfortran \
+        libbz2-dev \
+        libc6-dev \
+        libxt-dev \
+        liblzma-dev \
+        python3-dev \
+    && R -e "options(repos=Sys.getenv('CRAN_MIRROR')); \
+    install.packages(c('plyr','diptest','DT'), type = 'source')" \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM build_base AS download_and_unpack
 
 WORKDIR /tmp
 
@@ -108,7 +81,6 @@ FROM htstools_builder AS pctgcdata_builder
 WORKDIR "/tmp/pctGCdata-${PCTGCDATA}"
 RUN R CMD INSTALL .
 
-# ---------- facets tools ----------
 FROM pctgcdata_builder AS facets_builder
 WORKDIR "/tmp/facets-${FACETS_VERSION}"
 RUN R CMD INSTALL .
@@ -123,13 +95,47 @@ RUN mkdir -p inst/facets_qc \
     && cp -r facets_qc/* inst/facets_qc/ \
     && R CMD INSTALL .
 
-# ---------- final image ----------
-FROM facets_preview_builder AS final
+FROM runtime_base AS final
 
+COPY --from=htslib_builder /usr/lib/libhts.so* /usr/lib/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup" /usr/bin/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer" /usr/bin/
 COPY --from=facets_suite_builder "/tmp/facets-suite-${FACETS_SUITE_VERSION}/" /usr/bin/facets-suite/
 COPY --from=facets_preview_builder "/tmp/facets-preview-master/" /usr/bin/facets-preview/
+COPY --from=facets_preview_builder /usr/local/lib/R/site-library/ /usr/local/lib/R/site-library/
 
-RUN apt-get clean && apt-get purge \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN rm -rf /tmp/* /var/tmp/* \
+    # ---------- verify R packages ----------
+    && R --vanilla -e " \
+    pkgs <- list( \
+        plyr        = NULL, \
+        diptest     = NULL, \
+        DT          = NULL, \
+        pctGCdata   = Sys.getenv('PCTGCDATA'), \
+        facets      = Sys.getenv('FACETS_VERSION'), \
+        facetsSuite = NULL, \
+        facetsPreview = NULL \
+    ); \
+    failed <- c(); \
+    for (p in names(pkgs)) { \
+        if (!requireNamespace(p, quietly = TRUE)) { \
+            failed <- c(failed, p); \
+        } else { \
+            ver <- as.character(packageVersion(p)); \
+            expected <- pkgs[[p]]; \
+            cat(sprintf('  %-20s %s\n', p, ver)); \
+            if (!is.null(expected) && ver != expected) \
+                stop(sprintf('Version mismatch for %s: expected %s, got %s', p, expected, ver)); \
+        } \
+    }; \
+    if (length(failed) > 0) \
+        stop('The following R packages failed to load: ', paste(failed, collapse = ', ')); \
+    message('All R package version checks passed.')" \
+    # ---------- verify binary tools ----------
+    && snp-pileup --help 2>&1 | grep -q 'vcf file' \
+    && ppflag-fixer --help 2>&1 | grep -q 'input file' \
+    && /usr/bin/facets-suite/run-facets-wrapper.R --help | grep -q 'COUNTS_FILE'
+
+WORKDIR /work
+
+CMD ["/bin/bash"]
