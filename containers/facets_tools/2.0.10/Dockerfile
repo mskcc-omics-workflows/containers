@@ -104,6 +104,8 @@ COPY --from=facets_suite_builder "/tmp/facets-suite-${FACETS_SUITE_VERSION}/" /u
 COPY --from=facets_preview_builder "/tmp/facets-preview-master/" /usr/bin/facets-preview/
 COPY --from=facets_preview_builder /usr/local/lib/R/site-library/ /usr/local/lib/R/site-library/
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 RUN rm -rf /tmp/* /var/tmp/* \
     # ---------- verify R packages ----------
     && R --vanilla -e " \
