@@ -138,6 +138,4 @@ RUN rm -rf /tmp/* /var/tmp/* \
     && ppflag-fixer --help 2>&1 | grep -q 'input file' \
     && /usr/bin/facets-suite/run-facets-wrapper.R --help | grep -q 'COUNTS_FILE'
 
-WORKDIR /work
-
 CMD ["/bin/bash"]
