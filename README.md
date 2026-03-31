@@ -1,4 +1,4 @@
-# containers
+# Containers
 Mono-repository for custom docker containers used in nextflow modules
 
 For further information on how to contribute or use images in this repository, visit our [Gitbook documentation](https://mskcc-omics-workflows.gitbook.io/omics-wf/GMaCKqX0TmAhUOoZmuc6/image-management)
@@ -11,9 +11,13 @@ Each Dockerfile should be saved within a specific folder structure:
 containers/<softwarename>/<version>/Dockerfile
 ```
 
-Any custom scripts or resource files that are included in the image or required for building the image should be contained in the same folder as the Dockerfile. When you open a pull request for the container, an image will be automatically created and be labeled `$REGISTRY/<softwarename>:version`
+Any custom scripts or resource files that are included in the image or required for building the image should be contained in the same folder as the Dockerfile. 
+> [!NOTE]
+> When you open a pull request for the container, an image will be automatically created and be labeled `$REGISTRY/<softwarename>-<platform>:<version>`
+Each image is built on automatically for both platforms (arm64 & amd64) for greater compatability. This optimization is handled in the background, a manifest is generated so the right platform is automatically selected when you pull from `$REGISTRY/<softwarename>:<version>`
 
-The version of the image should correspond to the version of the software it contains. If the image has multiple independent software packages, the image version should start at 0.1.0 and increment in accordance with [Semantic Versioning](https://semver.org/#semantic-versioning-200).
+> [!TIP]
+> The version of the image should correspond to the version of the software it contains. If the image has multiple independent software packages, the image version should start at 0.1.0 and increment in accordance with [Semantic Versioning](https://semver.org/#semantic-versioning-200).
 
 ## Image repository
 
@@ -84,3 +88,15 @@ act \
     --workflows .github/workflows/dev-build.yml
 ```
 The `-s` parameters indicate "secrets" that are needed in the environment of the workflow. Certain steps may fail without them. Currently only `.github/workflows/dev-build.yml` has been properly enabled with `act`, but `.github/workflows/prod-build.yml` is not.
+
+## Multi arch build
+
+Images are built for linux/amd64 and linux/arm64 using Docker Buildx. BuildKit automatically injects two useful build arguments: `BUILDPLATFORM`, the platform of the machine running the build, and `TARGETPLATFORM`, the platform the image is being built for. A common pattern is to use BUILDPLATFORM in build stages to avoid slow cross-compiled tooling — for example, always running the Go compiler on the native host architecture for speed — while using TARGETPLATFORM to ensure the final binary targets the correct architecture:
+
+```
+FROM --platform=$BUILDPLATFORM golang:1.22 AS builder
+ARG TARGETPLATFORM
+RUN GOARCH=$(echo $TARGETPLATFORM | cut -d'/' -f2) go build -o app .
+
+FROM --platform=$TARGETPLATFORM alpine:3.19
+COPY --from=builder /app /app
