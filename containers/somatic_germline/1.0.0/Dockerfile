@@ -87,7 +87,7 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     && wget -q "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v${FASTQC_VERSION}.zip" \
     && git clone --single-branch --branch master https://github.com/mskcc/facets-preview.git facets-preview-master \
     && tar -xzf /tmp/somatic_germline_tools.tar.gz -C /tmp \
-    && rm /tmp/tools.tar.gz \
+    && rm /tmp/somatic_germline_tools.tar.gz \
     && tar xjf "htslib-${HTSLIB_VERSION}.tar.bz2" \
     && tar xzf "snp_pileup_${HTSTOOLS_VERSION}.tar.gz" \
     && tar xzf "facets-v${FACETS_VERSION}.tar.gz" \
