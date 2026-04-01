@@ -76,7 +76,7 @@ WORKDIR /tmp
 
 RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     --mount=type=secret,id=MSK_JFROG_TOKEN \
-    && wget --progress=dot:giga --directory-prefix /tmp --user="$(cat /run/secrets/MSK_JFROG_USERNAME)" --password="$(cat /run/secrets/MSK_JFROG_TOKEN)" "${SOMATIC_GERMLINE_TOOLS}" \
+    wget --progress=dot:giga --directory-prefix /tmp --user="$(cat /run/secrets/MSK_JFROG_USERNAME)" --password="$(cat /run/secrets/MSK_JFROG_TOKEN)" "${SOMATIC_GERMLINE_TOOLS}" \
     && wget -q "https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSION}/htslib-${HTSLIB_VERSION}.tar.bz2" \
     && wget -q "https://github.com/mskcc/htstools/archive/snp_pileup_${HTSTOOLS_VERSION}.tar.gz" \
     && wget -q "https://github.com/mskcc/facets/archive/v${FACETS_VERSION}.tar.gz" -O "facets-v${FACETS_VERSION}.tar.gz" \
@@ -129,7 +129,12 @@ FROM download_and_unpack AS sg_tools_builder
 
 ARG TARGETPLATFORM
 
-RUN mkdir -p /usr/bin/tools/{bwa,samtools,trim_galore,igvtools,mutect,picard}
+RUN mkdir -p /usr/bin/tools/bwa \
+    /usr/bin/tools/samtools \
+    /usr/bin/tools/trim_galore \
+    /usr/bin/tools/igvtools \
+    /usr/bin/tools/mutect \
+    /usr/bin/tools/picard
 
 WORKDIR /tmp/bwa-${BWA_VERSION}
 # Arm64 build: use sse2neon compatibility header to map SSE intrinsics to NEON
@@ -153,6 +158,8 @@ RUN cp -r /tmp/tools/IGVTools_v2.3.12/. /usr/bin/tools/igvtools/ \
     && chmod -R +x /usr/bin/tools/*
 
 FROM runtime_base AS final
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ENV PATH=/usr/bin/tools:/usr/bin:$PATH
 
@@ -209,9 +216,9 @@ RUN ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
             paste(failed, collapse=", ")); \
     message("All R package version checks passed.") \
     ' \
-    && bwa &> /tmp/bwa.log || true \
+    && bwa > /tmp/bwa.log 2>&1 || true \
     && grep -q "${BWA_VERSION}" /tmp/bwa.log \
-    && samtools &> /tmp/samtools.log || true \
+    && samtools > /tmp/samtools.log 2>&1 || true \
     && grep -q "${SAMTOOLS_VERSION}" /tmp/samtools.log \
     && bedtools --version | grep -q 'bedtools' \
     && fastqc --version | grep -q "${FASTQC_VERSION}" \
