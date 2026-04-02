@@ -19,6 +19,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PCTGCDATA=0.3.0 \
     BWA_VERSION=0.7.5a \
     SAMTOOLS_VERSION=0.1.19 \
+    GET_BASE_COUNT_MULTISAMPLE_VERSION=1.2.1 \
     FASTQC_VERSION=0.11.9 \
     PYTHONNOUSERSITE=set \
     FACETS_OVERRIDE_EXITCODE=set \
@@ -78,6 +79,7 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     --mount=type=secret,id=MSK_JFROG_TOKEN \
     wget --progress=dot:giga --directory-prefix /tmp --user="$(cat /run/secrets/MSK_JFROG_USERNAME)" --password="$(cat /run/secrets/MSK_JFROG_TOKEN)" "${SOMATIC_GERMLINE_TOOLS}" \
     && wget -q "https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSION}/htslib-${HTSLIB_VERSION}.tar.bz2" \
+    && wget -q "https://github.com/msk-access/GetBaseCountsMultiSample/archive/refs/tags/${GET_BASE_COUNT_MULTISAMPLE_VERSION}.tar.gz"
     && wget -q "https://github.com/mskcc/htstools/archive/snp_pileup_${HTSTOOLS_VERSION}.tar.gz" \
     && wget -q "https://github.com/mskcc/facets/archive/v${FACETS_VERSION}.tar.gz" -O "facets-v${FACETS_VERSION}.tar.gz" \
     && wget -q "https://github.com/mskcc/pctGCdata/archive/v${PCTGCDATA}.tar.gz" -O "pctGCdata-v${PCTGCDATA}.tar.gz" \
@@ -95,8 +97,23 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     && tar xzf "facets-suite-${FACETS_SUITE_VERSION}.tar.gz" \
     && tar xjf "bwa-${BWA_VERSION}.tar.bz2" \
     && tar xjf "samtools-${SAMTOOLS_VERSION}.tar.bz2" \
+    && tar -xzf "${GET_BASE_COUNT_MULTISAMPLE_VERSION}.tar.gz" \
+    && rm -rf GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build \
+    && mkdir -p GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build \
     && unzip -q "fastqc_v${FASTQC_VERSION}.zip" \
     && rm -f "fastqc_v${FASTQC_VERSION}.zip"
+
+FROM download_and_unpack AS bamtools_builder
+WORKDIR /tmp/GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build
+RUN cmake -DCMAKE_CXX_FLAGS=-std=c++03 .. \
+    && make \
+    && make install \
+    && cp ../lib/libbamtools.so.2.3.0 /usr/lib/
+
+FROM bamtools_builder AS getbasecounts_builder
+WORKDIR /tmp/GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}
+RUN make -j"$(nproc)" \
+    && cp getBaseCountsMultiSample /usr/bin/
 
 FROM download_and_unpack AS htslib_builder
 WORKDIR "/tmp/htslib-${HTSLIB_VERSION}"
@@ -163,6 +180,8 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ENV PATH=/usr/bin/tools:/usr/bin:$PATH
 
+COPY --from=bamtools_builder /usr/lib/libbamtools.so.2.3.0 /usr/lib/
+COPY --from=getbasecounts_builder /usr/bin/getBaseCountsMultiSample /usr/bin/
 COPY --from=htslib_builder /usr/lib/libhts.so* /usr/lib/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup" /usr/bin/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer" /usr/bin/
@@ -218,6 +237,8 @@ RUN ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
     ' \
     && bwa > /tmp/bwa.log 2>&1 || true \
     && grep -q "${BWA_VERSION}" /tmp/bwa.log \
+    && getBaseCountsMultiSample > /tmp/getbasecounts.log 2>&1 || true \
+    && grep -q "${GET_BASE_COUNT_MULTISAMPLE_VERSION}" /tmp/getbasecounts.log \
     && samtools > /tmp/samtools.log 2>&1 || true \
     && grep -q "${SAMTOOLS_VERSION}" /tmp/samtools.log \
     && bedtools --version | grep -q 'bedtools' \
