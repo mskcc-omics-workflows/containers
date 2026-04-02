@@ -97,7 +97,6 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     && tar xzf "facets-suite-${FACETS_SUITE_VERSION}.tar.gz" \
     && tar xjf "bwa-${BWA_VERSION}.tar.bz2" \
     && tar xjf "samtools-${SAMTOOLS_VERSION}.tar.bz2" \
-    && tar xzf "somatic_germline_tools.tar.gz" \
     && tar xzf "v${GET_BASE_COUNT_MULTISAMPLE_VERSION}.tar.gz" \
     && rm -rf GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build \
     && mkdir -p GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build \
