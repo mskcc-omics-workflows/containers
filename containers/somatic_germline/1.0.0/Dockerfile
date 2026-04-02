@@ -79,7 +79,7 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     --mount=type=secret,id=MSK_JFROG_TOKEN \
     wget --progress=dot:giga --directory-prefix /tmp --user="$(cat /run/secrets/MSK_JFROG_USERNAME)" --password="$(cat /run/secrets/MSK_JFROG_TOKEN)" "${SOMATIC_GERMLINE_TOOLS}" \
     && wget -q "https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSION}/htslib-${HTSLIB_VERSION}.tar.bz2" \
-    && wget -q "https://github.com/msk-access/GetBaseCountsMultiSample/archive/refs/tags/${GET_BASE_COUNT_MULTISAMPLE_VERSION}.tar.gz"
+    && wget -q "https://github.com/msk-access/GetBaseCountsMultiSample/archive/refs/tags/${GET_BASE_COUNT_MULTISAMPLE_VERSION}.tar.gz" \
     && wget -q "https://github.com/mskcc/htstools/archive/snp_pileup_${HTSTOOLS_VERSION}.tar.gz" \
     && wget -q "https://github.com/mskcc/facets/archive/v${FACETS_VERSION}.tar.gz" -O "facets-v${FACETS_VERSION}.tar.gz" \
     && wget -q "https://github.com/mskcc/pctGCdata/archive/v${PCTGCDATA}.tar.gz" -O "pctGCdata-v${PCTGCDATA}.tar.gz" \
