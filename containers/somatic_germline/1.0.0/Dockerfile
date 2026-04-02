@@ -56,6 +56,7 @@ FROM runtime_base AS build_base
 RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends \
         build-essential \
+        cmake \
         gfortran \
         libbz2-dev \
         libc6-dev \
