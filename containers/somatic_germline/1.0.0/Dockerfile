@@ -114,7 +114,7 @@ RUN cmake -DCMAKE_CXX_FLAGS=-std=c++03 .. \
 FROM bamtools_builder AS getbasecounts_builder
 WORKDIR /tmp/GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}
 RUN make -j"$(nproc)" \
-    && cp getBaseCountsMultiSample /usr/bin/
+    && cp GetBaseCountsMultiSample /usr/bin/
 
 FROM download_and_unpack AS htslib_builder
 WORKDIR "/tmp/htslib-${HTSLIB_VERSION}"
@@ -182,7 +182,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV PATH=/usr/bin/tools:/usr/bin:$PATH
 
 COPY --from=bamtools_builder /usr/lib/libbamtools.so.2.3.0 /usr/lib/
-COPY --from=getbasecounts_builder /usr/bin/getBaseCountsMultiSample /usr/bin/
+COPY --from=getbasecounts_builder /usr/bin/GetBaseCountsMultiSample /usr/bin/
 COPY --from=htslib_builder /usr/lib/libhts.so* /usr/lib/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup" /usr/bin/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer" /usr/bin/
@@ -238,7 +238,7 @@ RUN ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
     ' \
     && bwa > /tmp/bwa.log 2>&1 || true \
     && grep -q "${BWA_VERSION}" /tmp/bwa.log \
-    && getBaseCountsMultiSample > /tmp/getbasecounts.log 2>&1 || true \
+    && GetBaseCountsMultiSample > /tmp/getbasecounts.log 2>&1 || true \
     && grep -q "${GET_BASE_COUNT_MULTISAMPLE_VERSION}" /tmp/getbasecounts.log \
     && samtools > /tmp/samtools.log 2>&1 || true \
     && grep -q "${SAMTOOLS_VERSION}" /tmp/samtools.log \
