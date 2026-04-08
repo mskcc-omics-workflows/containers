@@ -16,9 +16,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HTSTOOLS_VERSION=0.1.1 \
     FACETS_SUITE_VERSION=2.0.10 \
     FACETS_VERSION=0.5.14 \
+    FACETS_PREVIEW_VERSION=3.1.1 \
     PCTGCDATA=0.3.0 \
     BWA_VERSION=0.7.5a \
+    BWA_SHA256=d157d79710b938225875c9322fc9e9139666deb7ace401dd73a5a65f6dffd7dd \
     SAMTOOLS_VERSION=0.1.19 \
+    SAMTOOLS_SHA256=d080c9d356e5f0ad334007e4461cbcee3c4ca97b8a7a5a48c44883cf9dee63d4 \
     GET_BASE_COUNT_MULTISAMPLE_VERSION=1.2.1 \
     FASTQC_VERSION=0.11.9 \
     PYTHONNOUSERSITE=set \
@@ -47,11 +50,13 @@ RUN apt-get update -qq \
         bzip2 \
         libcurl4-openssl-dev \
     && pip3 install --no-cache-dir \
-        numpy pandas python-dateutil pytz six cutadapt==4.1 \
+        numpy==1.26.4 pandas==2.2.3 python-dateutil==2.9.0.post0 pytz==2024.1 six==1.16.0 cutadapt==4.1 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 FROM runtime_base AS build_base
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends \
@@ -74,6 +79,8 @@ RUN apt-get update -qq \
 
 FROM build_base AS download_and_unpack
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 WORKDIR /tmp
 
 RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
@@ -88,7 +95,7 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     && wget -q "https://sourceforge.net/projects/bio-bwa/files/bwa-${BWA_VERSION}.tar.bz2" \
     && wget -q "https://sourceforge.net/projects/samtools/files/samtools/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2" \
     && wget -q "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v${FASTQC_VERSION}.zip" \
-    && git clone --single-branch --branch master https://github.com/mskcc/facets-preview.git facets-preview-master \
+    && git clone --single-branch --branch ${FACETS_PREVIEW_VERSION} https://github.com/mskcc/facets-preview.git facets-preview-${FACETS_PREVIEW_VERSION} \
     && tar -xzf /tmp/somatic_germline_tools.tar.gz -C /tmp \
     && rm /tmp/somatic_germline_tools.tar.gz \
     && tar xjf "htslib-${HTSLIB_VERSION}.tar.bz2" \
@@ -96,6 +103,8 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     && tar xzf "facets-v${FACETS_VERSION}.tar.gz" \
     && tar xzf "pctGCdata-v${PCTGCDATA}.tar.gz" \
     && tar xzf "facets-suite-${FACETS_SUITE_VERSION}.tar.gz" \
+    && echo "${BWA_SHA256}  bwa-${BWA_VERSION}.tar.bz2" | sha256sum -c - \
+    && echo "${SAMTOOLS_SHA256}  samtools-${SAMTOOLS_VERSION}.tar.bz2" | sha256sum -c - \
     && tar xjf "bwa-${BWA_VERSION}.tar.bz2" \
     && tar xjf "samtools-${SAMTOOLS_VERSION}.tar.bz2" \
     && tar xzf "v${GET_BASE_COUNT_MULTISAMPLE_VERSION}.tar.gz" \
@@ -105,6 +114,7 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     && rm -f "fastqc_v${FASTQC_VERSION}.zip"
 
 FROM download_and_unpack AS bamtools_builder
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 WORKDIR /tmp/GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build
 RUN cmake -DCMAKE_CXX_FLAGS=-std=c++03 .. \
     && make \
@@ -112,38 +122,47 @@ RUN cmake -DCMAKE_CXX_FLAGS=-std=c++03 .. \
     && cp ../lib/libbamtools.so.2.3.0 /usr/lib/
 
 FROM bamtools_builder AS getbasecounts_builder
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 WORKDIR /tmp/GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}
 RUN make -j"$(nproc)" \
     && cp GetBaseCountsMultiSample /usr/bin/
 
 FROM download_and_unpack AS htslib_builder
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 WORKDIR "/tmp/htslib-${HTSLIB_VERSION}"
 RUN ./configure && make && make install && cp libhts.so* /usr/lib
 
 FROM htslib_builder AS htstools_builder
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 WORKDIR "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}"
 RUN g++ -std=c++11 snp-pileup.cpp -lhts -o snp-pileup \
     && g++ -std=c++11 ppflag-fixer.cpp -lhts -o ppflag-fixer
 
 FROM htstools_builder AS pctgcdata_builder
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 WORKDIR "/tmp/pctGCdata-${PCTGCDATA}"
 RUN R CMD INSTALL .
 
 FROM pctgcdata_builder AS facets_builder
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 WORKDIR "/tmp/facets-${FACETS_VERSION}"
 RUN R CMD INSTALL .
 
 FROM facets_builder AS facets_suite_builder
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 WORKDIR "/tmp/facets-suite-${FACETS_SUITE_VERSION}"
 RUN R CMD INSTALL .
 
 FROM facets_suite_builder AS facets_preview_builder
-WORKDIR /tmp/facets-preview-master
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+WORKDIR /tmp/facets-preview-${FACETS_PREVIEW_VERSION}
 RUN mkdir -p inst/facets_qc \
     && cp -r facets_qc/* inst/facets_qc/ \
     && R CMD INSTALL .
 
 FROM download_and_unpack AS sg_tools_builder
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG TARGETPLATFORM
 
@@ -187,15 +206,18 @@ COPY --from=htslib_builder /usr/lib/libhts.so* /usr/lib/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup" /usr/bin/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer" /usr/bin/
 COPY --from=facets_suite_builder "/tmp/facets-suite-${FACETS_SUITE_VERSION}/" /usr/bin/facets-suite/
-COPY --from=facets_preview_builder "/tmp/facets-preview-master/" /usr/bin/facets-preview/
+COPY --from=facets_preview_builder "/tmp/facets-preview-${FACETS_PREVIEW_VERSION}/" /usr/bin/facets-preview/
 COPY --from=facets_preview_builder /usr/local/lib/R/site-library/ /usr/local/lib/R/site-library/
 COPY --from=sg_tools_builder /usr/bin/tools/ /usr/bin/tools/
 
-RUN ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
+RUN ldconfig \
+    && ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
     && ln -sf /usr/bin/tools/samtools/samtools /usr/bin/samtools \
     && ln -sf /usr/bin/tools/trim_galore/trim_galore /usr/bin/trim_galore \
     && ln -sf /usr/bin/tools/igvtools/igvtools /usr/bin/igvtools \
     && ln -sf /usr/bin/tools/FastQC/fastqc /usr/bin/fastqc \
+    && ln -sf /usr/bin/tools/mutect/muTect.jar /usr/bin/mutect.jar \
+    && ln -sf /usr/bin/tools/picard/picard-1.96.jar /usr/bin/picard.jar \
     && chmod +x /usr/bin/tools/*/* 2>/dev/null || true \
     && rm -rf /tmp/* /var/tmp/* \
     && R --vanilla -e ' \
@@ -249,6 +271,10 @@ RUN ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
     && snp-pileup --help 2>&1 | grep -q 'vcf file' \
     && ppflag-fixer --help 2>&1 | grep -q 'input file' \
     && /usr/bin/facets-suite/run-facets-wrapper.R --help | grep -q 'COUNTS_FILE' \
+    && java -jar /usr/bin/mutect.jar > /tmp/mutect.log 2>&1 || true \
+    && grep -qi 'mutect\|1.1.4' /tmp/mutect.log \
+    && java -jar /usr/bin/picard.jar > /tmp/picard.log 2>&1 || true \
+    && grep -qi 'picard\|1.96' /tmp/picard.log \
     && java -version \
     && rm -rf /tmp/* \
     && echo "All binary tool version checks passed (htstools ${HTSTOOLS_VERSION}, bwa ${BWA_VERSION}, samtools ${SAMTOOLS_VERSION}, fastqc ${FASTQC_VERSION})."
