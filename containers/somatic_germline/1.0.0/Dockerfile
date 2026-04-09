@@ -19,6 +19,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     FACETS_PREVIEW_VERSION=3.1.1 \
     PCTGCDATA=0.3.0 \
     BWA_VERSION=0.7.5a \
+    GATK_VERSION=3.3-0 \
+    IGVTOOLS_VERSION=2.3.12 \
+    MUTECT_VERSION=1.1.4 \
+    PICARD_VERSION=1.96 \
     BWA_SHA256=d157d79710b938225875c9322fc9e9139666deb7ace401dd73a5a65f6dffd7dd \
     SAMTOOLS_VERSION=0.1.19 \
     SAMTOOLS_SHA256=d080c9d356e5f0ad334007e4461cbcee3c4ca97b8a7a5a48c44883cf9dee63d4 \
@@ -171,7 +175,8 @@ RUN mkdir -p /usr/bin/tools/bwa \
     /usr/bin/tools/trim_galore \
     /usr/bin/tools/igvtools \
     /usr/bin/tools/mutect \
-    /usr/bin/tools/picard
+    /usr/bin/tools/picard \
+    /usr/bin/tools/gatk
 
 WORKDIR /tmp/bwa-${BWA_VERSION}
 # Arm64 build: use sse2neon compatibility header to map SSE intrinsics to NEON
@@ -187,9 +192,10 @@ RUN make -j"$(nproc)" \
     && cp samtools /usr/bin/tools/samtools/ \
     && cp misc/*.pl /usr/bin/tools/samtools/
 
-RUN cp -r /tmp/tools/IGVTools_v2.3.12/. /usr/bin/tools/igvtools/ \
-    && cp -r /tmp/tools/muTect-1.1.4/. /usr/bin/tools/mutect/ \
-    && cp -r /tmp/tools/picard-tools-1.96/. /usr/bin/tools/picard/ \
+RUN cp -r /tmp/tools/IGVTools_v${IGVTOOLS_VERSION}/. /usr/bin/tools/igvtools/ \
+    && cp -r /tmp/tools/muTect-${MUTECT_VERSION}/. /usr/bin/tools/mutect/ \
+    && cp -r /tmp/tools/picard-tools-${PICARD_VERSION}/. /usr/bin/tools/picard/ \
+    && cp -r /tmp/tools/GenomeAnalysisTK-${GATK_VERSION}/. /usr/bin/tools/gatk/ \
     && cp -r /tmp/tools/trimgalore-0.2.5.mod/. /usr/bin/tools/trim_galore/ \
     && cp -r /tmp/FastQC /usr/bin/tools/FastQC \
     && chmod -R +x /usr/bin/tools/*
@@ -217,7 +223,8 @@ RUN ldconfig \
     && ln -sf /usr/bin/tools/igvtools/igvtools /usr/bin/igvtools \
     && ln -sf /usr/bin/tools/FastQC/fastqc /usr/bin/fastqc \
     && ln -sf /usr/bin/tools/mutect/muTect.jar /usr/bin/mutect.jar \
-    && ln -sf /usr/bin/tools/picard/picard-1.96.jar /usr/bin/picard.jar \
+    && ln -sf /usr/bin/tools/picard/picard-${PICARD_VERSION}.jar /usr/bin/picard.jar \
+    && ln -sf /usr/bin/tools/gatk/GenomeAnalysisTK.jar /usr/bin/gatk.jar \
     && chmod +x /usr/bin/tools/*/* 2>/dev/null || true \
     && rm -rf /tmp/* /var/tmp/* \
     && R --vanilla -e ' \
@@ -272,9 +279,11 @@ RUN ldconfig \
     && ppflag-fixer --help 2>&1 | grep -q 'input file' \
     && /usr/bin/facets-suite/run-facets-wrapper.R --help | grep -q 'COUNTS_FILE' \
     && java -jar /usr/bin/mutect.jar > /tmp/mutect.log 2>&1 || true \
-    && grep -qi 'mutect\|1.1.4' /tmp/mutect.log \
+    && grep -qi "mutect\\|${MUTECT_VERSION}" /tmp/mutect.log \
     && java -jar /usr/bin/picard.jar > /tmp/picard.log 2>&1 || true \
-    && grep -qi 'picard\|1.96' /tmp/picard.log \
+    && grep -qi "picard\\|${PICARD_VERSION}" /tmp/picard.log \
+    && java -jar /usr/bin/gatk.jar > /tmp/gatk.log 2>&1 || true \
+    && grep -qi "gatk\\|${GATK_VERSION}" /tmp/gatk.log \
     && java -version \
     && rm -rf /tmp/* \
     && echo "All binary tool version checks passed (htstools ${HTSTOOLS_VERSION}, bwa ${BWA_VERSION}, samtools ${SAMTOOLS_VERSION}, fastqc ${FASTQC_VERSION})."
