@@ -44,6 +44,7 @@ RUN apt-get update -qq \
         python3-dev \
         python3-pip \
         gcc \
+        parallel \
         default-jdk \
         perl \
         perl-modules \
