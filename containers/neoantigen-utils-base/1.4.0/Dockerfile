@@ -22,6 +22,7 @@ RUN apt-get update \
     # Install runtime dependencies for Python
     && apt-get install --no-install-recommends -y \
     libffi8 \
+    xxd \
     libgdbm6 \
     libsqlite3-0 \
     libreadline8 \
