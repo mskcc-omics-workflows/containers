@@ -16,6 +16,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+# hadolint ignore=DL3003
 RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       --mount=type=secret,id=MSK_JFROG_TOKEN \
       set -eux && apt-get update -y && \
@@ -44,7 +45,6 @@ RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       cd "$HLAHD_DIR" && \
       bash ./install.sh && \
       sh ./update.dictionary.sh && \
-      cd / && \
       # Validate that compilation and dictionary index build actually produced
       # the artifacts we depend on. Without these checks, a silent script
       # failure would publish a broken image.
