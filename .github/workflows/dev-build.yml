@@ -85,7 +85,7 @@ jobs:
     with:
       tags: ${{ matrix.tags }}
       platform: "amd64"
-      registry: ${{ vars.JFROG_CONTAINER_REPO }}
+      registry: ${{ vars.JFROG_DEV_CONTAINER_REPO }}
       type_of_run: "dev"
       is_jfrog: true
     secrets:
@@ -105,7 +105,7 @@ jobs:
     with:
       tags: ${{ matrix.tags }}
       platform: "arm64"
-      registry: ${{ vars.JFROG_CONTAINER_REPO }}
+      registry: ${{ vars.JFROG_DEV_CONTAINER_REPO }}
       type_of_run: "dev"
       is_jfrog: true
     secrets:
@@ -131,7 +131,7 @@ jobs:
         run: echo version=$( basename "${{ matrix.tags }}" ) >> $GITHUB_OUTPUT
       - name: Get docker tag
         id: docker_tag
-        run: echo tag="${{ vars.JFROG_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
+        run: echo tag="${{ vars.JFROG_DEV_CONTAINER_REPO }}/${{ steps.docker_repo_name.outputs.name}}:${{steps.docker_repo_version.outputs.version}}" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
