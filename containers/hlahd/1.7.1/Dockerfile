@@ -16,6 +16,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+# hadolint ignore=DL3003
 RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       --mount=type=secret,id=MSK_JFROG_TOKEN \
       set -eux && apt-get update -y && \
@@ -26,6 +27,7 @@ RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       g++ \
       perl \
       python3 \
+      unzip \
       wget \
       bowtie2 \
       && \
@@ -37,8 +39,22 @@ RUN  --mount=type=secret,id=MSK_JFROG_USERNAME \
       tar -zxvf /tmp/hlahdTmp/hlahd.1.7.1.tar.gz -C /opt/hlahd/ && \
       HLAHD_DIR="$(find /opt/hlahd -maxdepth 1 -type d -name 'hlahd.*' | head -1)" && \
       test -n "$HLAHD_DIR" && \
-      bash "$HLAHD_DIR/install.sh" && \
-      sh "$HLAHD_DIR/update.dictionary.sh" && \
+      # install.sh and update.dictionary.sh use relative paths (./src, ./bin,
+      # dictionary/) so we must run them from $HLAHD_DIR. Without cd, the
+      # scripts emit non-fatal errors and exit 0, leaving an unusable image.
+      cd "$HLAHD_DIR" && \
+      bash ./install.sh && \
+      sh ./update.dictionary.sh && \
+      # Validate that compilation and dictionary index build actually produced
+      # the artifacts we depend on. Without these checks, a silent script
+      # failure would publish a broken image.
+      test -x "$HLAHD_DIR/bin/pm_extract" && \
+      test -x "$HLAHD_DIR/bin/stfr" && \
+      test -x "$HLAHD_DIR/bin/get_diff_fasta" && \
+      test -x "$HLAHD_DIR/bin/split_pm_read" && \
+      test -x "$HLAHD_DIR/bin/split_shell" && \
+      test -f "$HLAHD_DIR/dictionary/all_exon_N150.fasta.1.bt2" && \
+      test -f "$HLAHD_DIR/dictionary/all_intron_N150.fasta.1.bt2" && \
       ln -s "$HLAHD_DIR" /opt/hlahd/current && \
       # Clean up
       apt-get clean && \
