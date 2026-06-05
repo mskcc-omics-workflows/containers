@@ -111,8 +111,8 @@ RUN wget -q "https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSI
     && tar -xjf "htslib-${HTSLIB_VERSION}.tar.bz2" \
     && tar -xjf "bcftools-${BCFTOOLS_VERSION}.tar.bz2" \
     && tar -xjf "samtools-${SAMTOOLS_VERSION}.tar.bz2" \
-    && unzip -q "ensembl-tools-release-${VEP_FIRST}.zip" \
-    && unzip -q "ensembl-tools-release-${VEP_SECOND}.zip" \
+    && unzip -q "ensembl-tools-release-${VEP_FIRST}.zip -C ${VEP_FIRST}" \
+    && unzip -q "ensembl-tools-release-${VEP_SECOND}.zip -C ${VEP_SECOND}" \
     && unzip -q "vcf2maf-v${VCF2MAF_VERSION}.zip"
 
 FROM download_and_unpack AS htslib_builder
@@ -136,18 +136,18 @@ RUN ./configure --with-htslib="/tmp/htslib-${HTSLIB_VERSION}" && make -j"$(nproc
 # Build VEP (first version)
 FROM samtools_builder AS vep_first_builder
 
-WORKDIR "/tmp/ensembl-tools-release-${VEP_FIRST}/scripts/variant_effect_predictor"
+WORKDIR "/tmp/${VEP_FIRST}/ensembl-tools-release/scripts/variant_effect_predictor"
 
 RUN perl INSTALL.pl --AUTO a --NO_HTSLIB \
-    && mv "/tmp/ensembl-tools-release-${VEP_FIRST}/scripts/variant_effect_predictor" "/usr/local/vep/${VEP_FIRST}"
+    && mv "/tmp/${VEP_FIRST}/ensembl-tools-release/scripts/variant_effect_predictor" "/usr/local/vep/${VEP_FIRST}"
 
 # Build VEP (second version)
 FROM samtools_builder AS vep_second_builder
 
-WORKDIR "/tmp/ensembl-tools-release-${VEP_SECOND}/scripts/variant_effect_predictor"
+WORKDIR "/tmp/${VEP_SECOND}/ensembl-tools-release/scripts/variant_effect_predictor"
 
 RUN perl INSTALL.pl --AUTO a --NO_HTSLIB \
-    && mv "/tmp/ensembl-tools-release-${VEP_SECOND}/scripts/variant_effect_predictor" "/usr/local/vep/${VEP_SECOND}"
+    && mv "/tmp/${VEP_SECOND}/ensembl-tools-release/scripts/variant_effect_predictor" "/usr/local/vep/${VEP_SECOND}"
 
 FROM vep_first_builder AS vcf2maf_builder
 
@@ -155,8 +155,7 @@ WORKDIR "/tmp/vcf2maf-${VCF2MAF_VERSION}"
 
 RUN mkdir -p /usr/local/vcf2maf \
     && cp -a . /usr/local/vcf2maf/ \
-    && ln -sf /usr/local/vcf2maf/vcf2maf.pl /usr/local/bin/vcf2maf.pl \
-    && ln -sf /usr/local/vep/vep /usr/local/bin/vep
+    && ln -sf /usr/local/vcf2maf/vcf2maf.pl /usr/local/bin/vcf2maf.pl
 
 FROM base AS final
 
@@ -167,8 +166,8 @@ COPY --from=vcf2maf_builder /usr/local/bin/bgzip    /usr/local/bin/bgzip
 COPY --from=vcf2maf_builder /usr/local/lib/libhts.so* /usr/local/lib/
 COPY --from=vcf2maf_builder /usr/local/lib/perl5    /usr/local/lib/perl5
 COPY --from=vcf2maf_builder /usr/local/share/perl5  /usr/local/share/perl5
-COPY --from=vep_first_builder /usr/local/vep/${VEP_FIRST}                /usr/local/vep/${VEP_FIRST}
-COPY --from=vep_second_builder /usr/local/vep/${VEP_SECOND}                /usr/local/vep/${VEP_SECOND}
+COPY --from=vep_first_builder "/usr/local/vep/${VEP_FIRST}"                "/usr/local/vep/${VEP_FIRST}"
+COPY --from=vep_second_builder "/usr/local/vep/${VEP_SECOND}"               "/usr/local/vep/${VEP_SECOND}"
 COPY --from=vcf2maf_builder /usr/local/vcf2maf            /usr/local/vcf2maf
 
 ENV PATH="/usr/local/bin:${PATH}"
@@ -181,9 +180,8 @@ RUN set -eux \
     && rm -rf /var/cache/apk/* /tmp/* \
     && ldconfig /usr/local/lib 2>/dev/null || true \
     && vcf2maf.pl --help >/dev/null \
-    && variant_effect_predictor.pl --help >/dev/null \
-    && /usr/local/vep/${VEP_FIRST}/variant_effect_predictor.pl --help >/dev/null \
-    && /usr/local/vep/${VEP_SECOND}/variant_effect_predictor.pl --help >/dev/null \
+    && /bin/bash -c "/usr/local/vep/${VEP_FIRST}/variant_effect_predictor.pl --help" >/dev/null \
+    && /bin/bash -c "/usr/local/vep/${VEP_SECOND}/variant_effect_predictor.pl --help" >/dev/null \
     && bcftools --version >/dev/null \
     && samtools --version >/dev/null \
     && perl -e 'for my $m (qw( \
