@@ -111,8 +111,8 @@ RUN wget -q "https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSI
     && tar -xjf "htslib-${HTSLIB_VERSION}.tar.bz2" \
     && tar -xjf "bcftools-${BCFTOOLS_VERSION}.tar.bz2" \
     && tar -xjf "samtools-${SAMTOOLS_VERSION}.tar.bz2" \
-    && unzip -q "ensembl-tools-release-${VEP_FIRST}.zip" -C "${VEP_FIRST}" \
-    && unzip -q "ensembl-tools-release-${VEP_SECOND}.zip" -C "${VEP_SECOND}" \
+    && unzip -q "ensembl-tools-release-${VEP_FIRST}.zip" -d "${VEP_FIRST}" \
+    && unzip -q "ensembl-tools-release-${VEP_SECOND}.zip" -d "${VEP_SECOND}" \
     && unzip -q "vcf2maf-v${VCF2MAF_VERSION}.zip"
 
 FROM download_and_unpack AS htslib_builder
