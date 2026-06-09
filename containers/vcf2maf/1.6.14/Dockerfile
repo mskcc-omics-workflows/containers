@@ -139,7 +139,7 @@ FROM samtools_builder AS vep_first_builder
 WORKDIR "/tmp/${VEP_FIRST}/ensembl-tools-release-${VEP_FIRST}/scripts/variant_effect_predictor"
 
 RUN perl INSTALL.pl --AUTO a --NO_HTSLIB \
-    && mv "/tmp/${VEP_FIRST}/ensembl-tools-release-${VEP_FIRST}/scripts/variant_effect_predictor" "/usr/local/vep/${VEP_FIRST}"
+    && cp -r ../variant_effect_predictor /usr/local/vep/
 
 # Build VEP (second version)
 FROM samtools_builder AS vep_second_builder
@@ -147,7 +147,7 @@ FROM samtools_builder AS vep_second_builder
 WORKDIR "/tmp/${VEP_SECOND}/ensembl-tools-release-${VEP_SECOND}/scripts/variant_effect_predictor"
 
 RUN perl INSTALL.pl --AUTO a --NO_HTSLIB \
-    && mv "/tmp/${VEP_SECOND}/ensembl-tools-release-${VEP_SECOND}/scripts/variant_effect_predictor" "/usr/local/vep/${VEP_SECOND}"
+    && cp -r ../variant_effect_predictor /usr/local/vep/
 
 FROM vep_first_builder AS vcf2maf_builder
 
@@ -166,8 +166,8 @@ COPY --from=vcf2maf_builder /usr/local/bin/bgzip    /usr/local/bin/bgzip
 COPY --from=vcf2maf_builder /usr/local/lib/libhts.so* /usr/local/lib/
 COPY --from=vcf2maf_builder /usr/local/lib/perl5    /usr/local/lib/perl5
 COPY --from=vcf2maf_builder /usr/local/share/perl5  /usr/local/share/perl5
-COPY --from=vep_first_builder "/usr/local/vep/${VEP_FIRST}"                "/usr/local/vep/${VEP_FIRST}"
-COPY --from=vep_second_builder "/usr/local/vep/${VEP_SECOND}"               "/usr/local/vep/${VEP_SECOND}"
+COPY --from=vep_first_builder /usr/local/vep/        "/usr/local/vep/${VEP_FIRST}"
+COPY --from=vep_second_builder /usr/local/vep/       "/usr/local/vep/${VEP_SECOND}"
 COPY --from=vcf2maf_builder /usr/local/vcf2maf            /usr/local/vcf2maf
 
 ENV PATH="/usr/local/bin:${PATH}"
