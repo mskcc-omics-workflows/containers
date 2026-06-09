@@ -31,6 +31,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONNOUSERSITE=set \
     FACETS_OVERRIDE_EXITCODE=set \
     SOMATIC_GERMLINE_TOOLS=https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/somatic_germline_tools.tar.gz \
+    SOMATIC_GERMLINE_R_SCRIPT_LIB=/usr/local/lib/R/site-library/somatic_germline_tools \
     LC_ALL=C.UTF-8 \
     LANG=C.UTF-8
 
@@ -48,12 +49,18 @@ RUN apt-get update -qq \
         default-jdk \
         perl \
         perl-modules \
+        libstatistics-lite-perl \
+        libtie-ixhash-perl \
         bedtools \
         procps \
         tar \
         unzip \
         bzip2 \
         libcurl4-openssl-dev \
+    && mkdir -p /usr/local/lib/site_perl \
+    && curl -fsSL https://cpanmin.us | perl - App::cpanminus \
+    && cpanm --notest Tie::Autotie \
+    && rm -rf /root/.cpanm \
     && pip3 install --no-cache-dir \
         numpy==1.26.4 pandas==2.2.3 python-dateutil==2.9.0.post0 pytz==2024.1 six==1.16.0 cutadapt==4.1 \
     && apt-get clean \
@@ -75,7 +82,7 @@ RUN apt-get update -qq \
         liblzma-dev \
         python3-dev \
     && R -e "options(repos=c(CRAN='https://packagemanager.posit.co/cran/__linux__/jammy/2025-06-01')); \
-    install.packages(c('plyr','diptest','DT','bit','bit64','Ckmeans.1d.dp','gplots','memoise', \
+    install.packages(c('plyr','optparse','diptest','DT','bit','bit64','Ckmeans.1d.dp','gplots','memoise', \
     'rappdirs','rbibutils','Rdpack','tinytex','crosstalk'), Ncpus=parallel::detectCores()); \
     if (!requireNamespace('BiocManager', quietly=TRUE)) install.packages('BiocManager'); \
     BiocManager::install('DNAcopy', ask=FALSE, update=FALSE)" \
@@ -102,12 +109,16 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     && wget -q "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v${FASTQC_VERSION}.zip" \
     && git clone --single-branch --branch ${FACETS_PREVIEW_VERSION} https://github.com/mskcc/facets-preview.git facets-preview-${FACETS_PREVIEW_VERSION} \
     && tar -xzf /tmp/somatic_germline_tools.tar.gz -C /tmp \
+    && mkdir -p /tmp/r-scripts \
+    && cp AllMetrics_v1.2.r /tmp/r-scripts/ \
+    && cp textplot.R /tmp/r-scripts/ \
     && rm /tmp/somatic_germline_tools.tar.gz \
     && tar xjf "htslib-${HTSLIB_VERSION}.tar.bz2" \
     && tar xzf "snp_pileup_${HTSTOOLS_VERSION}.tar.gz" \
     && tar xzf "facets-v${FACETS_VERSION}.tar.gz" \
     && tar xzf "pctGCdata-v${PCTGCDATA}.tar.gz" \
     && tar xzf "facets-suite-${FACETS_SUITE_VERSION}.tar.gz" \
+    && cp MSKCC_DMP_Logger_patched.pm /usr/local/lib/site_perl/MSKCC_DMP_Logger_patched.pm \
     && echo "${BWA_SHA256}  bwa-${BWA_VERSION}.tar.bz2" | sha256sum -c - \
     && echo "${SAMTOOLS_SHA256}  samtools-${SAMTOOLS_VERSION}.tar.bz2" | sha256sum -c - \
     && tar xjf "bwa-${BWA_VERSION}.tar.bz2" \
@@ -193,11 +204,11 @@ RUN make -j"$(nproc)" \
     && cp samtools /usr/bin/tools/samtools/ \
     && cp misc/*.pl /usr/bin/tools/samtools/
 
-RUN cp -r /tmp/tools/IGVTools_v${IGVTOOLS_VERSION}/. /usr/bin/tools/igvtools/ \
-    && cp -r /tmp/tools/muTect-${MUTECT_VERSION}/. /usr/bin/tools/mutect/ \
-    && cp -r /tmp/tools/picard-tools-${PICARD_VERSION}/. /usr/bin/tools/picard/ \
-    && cp -r /tmp/tools/GenomeAnalysisTK-${GATK_VERSION}/. /usr/bin/tools/gatk/ \
-    && cp -r /tmp/tools/trimgalore-0.2.5.mod/. /usr/bin/tools/trim_galore/ \
+RUN cp -r /tmp/IGVTools_v${IGVTOOLS_VERSION}/. /usr/bin/tools/igvtools/ \
+    && cp -r /tmp/muTect-${MUTECT_VERSION}/. /usr/bin/tools/mutect/ \
+    && cp -r /tmp/picard-tools-${PICARD_VERSION}/. /usr/bin/tools/picard/ \
+    && cp -r /tmp/GenomeAnalysisTK-${GATK_VERSION}/. /usr/bin/tools/gatk/ \
+    && cp -r /tmp/trimgalore-0.2.5.mod/. /usr/bin/tools/trim_galore/ \
     && cp -r /tmp/FastQC /usr/bin/tools/FastQC \
     && chmod -R +x /usr/bin/tools/*
 
@@ -216,6 +227,7 @@ COPY --from=facets_suite_builder "/tmp/facets-suite-${FACETS_SUITE_VERSION}/" /u
 COPY --from=facets_preview_builder "/tmp/facets-preview-${FACETS_PREVIEW_VERSION}/" /usr/bin/facets-preview/
 COPY --from=facets_preview_builder /usr/local/lib/R/site-library/ /usr/local/lib/R/site-library/
 COPY --from=sg_tools_builder /usr/bin/tools/ /usr/bin/tools/
+COPY --from=download_and_unpack /tmp/r-scripts/ ${SOMATIC_GERMLINE_R_SCRIPT_LIB}/
 
 RUN ldconfig \
     && ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
@@ -286,6 +298,9 @@ RUN ldconfig \
     && java -jar /usr/bin/gatk.jar > /tmp/gatk.log 2>&1 || true \
     && grep -qi "gatk\\|${GATK_VERSION}" /tmp/gatk.log \
     && java -version \
+    && perl -e 'for my $m (qw(Tie::Autotie Tie::IxHash Statistics::Lite)) { eval "require $m; 1" or die "Missing Perl module $m: $@"; } print "Perl module checks passed.\\n";' \
+    && test -f "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/AllMetrics_v1.2.r" \
+    && test -f "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/textplot.R" \
     && rm -rf /tmp/* \
     && echo "All binary tool version checks passed (htstools ${HTSTOOLS_VERSION}, bwa ${BWA_VERSION}, samtools ${SAMTOOLS_VERSION}, fastqc ${FASTQC_VERSION})."
 
