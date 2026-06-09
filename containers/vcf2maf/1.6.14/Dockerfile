@@ -136,18 +136,18 @@ RUN ./configure --with-htslib="/tmp/htslib-${HTSLIB_VERSION}" && make -j"$(nproc
 # Build VEP (first version)
 FROM samtools_builder AS vep_first_builder
 
-WORKDIR "/tmp/${VEP_FIRST}/ensembl-tools-release/scripts/variant_effect_predictor"
+WORKDIR "/tmp/${VEP_FIRST}/ensembl-tools-release-${VEP_FIRST}/scripts/variant_effect_predictor"
 
 RUN perl INSTALL.pl --AUTO a --NO_HTSLIB \
-    && mv "/tmp/${VEP_FIRST}/ensembl-tools-release/scripts/variant_effect_predictor" "/usr/local/vep/${VEP_FIRST}"
+    && mv "/tmp/${VEP_FIRST}/ensembl-tools-release-${VEP_FIRST}/scripts/variant_effect_predictor" "/usr/local/vep/${VEP_FIRST}"
 
 # Build VEP (second version)
 FROM samtools_builder AS vep_second_builder
 
-WORKDIR "/tmp/${VEP_SECOND}/ensembl-tools-release/scripts/variant_effect_predictor"
+WORKDIR "/tmp/${VEP_SECOND}/ensembl-tools-release-${VEP_SECOND}/scripts/variant_effect_predictor"
 
 RUN perl INSTALL.pl --AUTO a --NO_HTSLIB \
-    && mv "/tmp/${VEP_SECOND}/ensembl-tools-release/scripts/variant_effect_predictor" "/usr/local/vep/${VEP_SECOND}"
+    && mv "/tmp/${VEP_SECOND}/ensembl-tools-release-${VEP_SECOND}/scripts/variant_effect_predictor" "/usr/local/vep/${VEP_SECOND}"
 
 FROM vep_first_builder AS vcf2maf_builder
 
