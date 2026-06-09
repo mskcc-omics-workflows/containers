@@ -64,5 +64,3 @@ COPY --from=build /genome-nexus-annotation-pipeline/annotationPipeline/src/main/
 ENV PATH="${PATH}:${GN_HOME}/scripts"
 
 WORKDIR ${GN_TARGET}
-
-ENTRYPOINT []
