@@ -65,4 +65,4 @@ ENV PATH="${PATH}:${GN_HOME}/scripts"
 
 WORKDIR ${GN_TARGET}
 
-CMD ["java", "-jar", "annotationPipeline.jar"]
+ENTRYPOINT []
