@@ -51,6 +51,7 @@ RUN apt-get update -qq \
         perl-modules \
         libstatistics-lite-perl \
         libtie-ixhash-perl \
+        vcftools \
         bedtools \
         procps \
         tar \
@@ -216,7 +217,8 @@ FROM runtime_base AS final
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-ENV PATH=/usr/bin/tools:/usr/bin:$PATH
+ENV PATH=/usr/bin/tools:/usr/bin:$PATH \
+    PERL5LIB=/usr/share/perl5:/usr/lib/perl5
 
 COPY --from=bamtools_builder /usr/lib/libbamtools.so.2.3.0 /usr/lib/
 COPY --from=getbasecounts_builder /usr/bin/GetBaseCountsMultiSample /usr/bin/
@@ -299,9 +301,11 @@ RUN ldconfig \
     && grep -qi "gatk\\|${GATK_VERSION}" /tmp/gatk.log \
     && java -version \
     && perl -e 'for my $m (qw(Tie::Autotie Tie::IxHash Statistics::Lite)) { eval "require $m; 1" or die "Missing Perl module $m: $@"; } print "Perl module checks passed.\\n";' \
+    && perl -e 'use Vcf; print "Vcf.pm from vcftools loaded successfully.\\n";' \
     && test -f "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/AllMetrics_v1.2.r" \
     && test -f "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/textplot.R" \
     && rm -rf /tmp/* \
-    && echo "All binary tool version checks passed (htstools ${HTSTOOLS_VERSION}, bwa ${BWA_VERSION}, samtools ${SAMTOOLS_VERSION}, fastqc ${FASTQC_VERSION})."
+    && echo "All binary tool version checks passed (htstools ${HTSTOOLS_VERSION}, bwa ${BWA_VERSION}, samtools ${SAMTOOLS_VERSION}, fastqc ${FASTQC_VERSION})." \
+    && echo "vcftools and Vcf.pm successfully installed and verified."
 
 CMD ["/bin/bash"]
