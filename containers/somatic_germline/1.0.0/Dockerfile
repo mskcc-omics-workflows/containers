@@ -35,6 +35,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LC_ALL=C.UTF-8 \
     LANG=C.UTF-8
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -108,7 +110,7 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     && wget -q "https://sourceforge.net/projects/bio-bwa/files/bwa-${BWA_VERSION}.tar.bz2" \
     && wget -q "https://sourceforge.net/projects/samtools/files/samtools/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2" \
     && wget -q "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v${FASTQC_VERSION}.zip" \
-    && git clone --single-branch --branch ${FACETS_PREVIEW_VERSION} https://github.com/mskcc/facets-preview.git facets-preview-${FACETS_PREVIEW_VERSION} \
+    && git clone --single-branch --branch "${FACETS_PREVIEW_VERSION}" https://github.com/mskcc/facets-preview.git "facets-preview-${FACETS_PREVIEW_VERSION}" \
     && tar -xzf /tmp/somatic_germline_tools.tar.gz -C /tmp \
     && mkdir -p /tmp/r-scripts \
     && cp AllMetrics_v1.2.r /tmp/r-scripts/ \
@@ -125,8 +127,8 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     && tar xjf "bwa-${BWA_VERSION}.tar.bz2" \
     && tar xjf "samtools-${SAMTOOLS_VERSION}.tar.bz2" \
     && tar xzf "v${GET_BASE_COUNT_MULTISAMPLE_VERSION}.tar.gz" \
-    && rm -rf GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build \
-    && mkdir -p GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build \
+    && rm -rf "GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build" \
+    && mkdir -p "GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build" \
     && unzip -q "fastqc_v${FASTQC_VERSION}.zip" \
     && rm -f "fastqc_v${FASTQC_VERSION}.zip"
 
@@ -140,7 +142,7 @@ RUN cmake -DCMAKE_CXX_FLAGS=-std=c++03 .. \
 
 FROM bamtools_builder AS getbasecounts_builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-WORKDIR /tmp/GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}
+WORKDIR "/tmp/GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}"
 RUN make -j"$(nproc)" \
     && cp GetBaseCountsMultiSample /usr/bin/
 
@@ -172,7 +174,7 @@ RUN R CMD INSTALL .
 
 FROM facets_suite_builder AS facets_preview_builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-WORKDIR /tmp/facets-preview-${FACETS_PREVIEW_VERSION}
+WORKDIR "/tmp/facets-preview-${FACETS_PREVIEW_VERSION}"
 RUN mkdir -p inst/facets_qc \
     && cp -r facets_qc/* inst/facets_qc/ \
     && R CMD INSTALL .
@@ -191,7 +193,7 @@ RUN mkdir -p /usr/bin/tools/bwa \
     /usr/bin/tools/picard \
     /usr/bin/tools/gatk
 
-WORKDIR /tmp/bwa-${BWA_VERSION}
+WORKDIR "/tmp/bwa-${BWA_VERSION}"
 # Arm64 build: use sse2neon compatibility header to map SSE intrinsics to NEON
 RUN case "${TARGETPLATFORM}" in \
     *arm64*) wget -q -O /usr/local/include/sse2neon.h https://raw.githubusercontent.com/DLTcollab/sse2neon/master/sse2neon.h \
@@ -200,15 +202,15 @@ RUN case "${TARGETPLATFORM}" in \
     && make -j"$(nproc)" \
     && cp bwa /usr/bin/tools/bwa/
 
-WORKDIR /tmp/samtools-${SAMTOOLS_VERSION}
+WORKDIR "/tmp/samtools-${SAMTOOLS_VERSION}"
 RUN make -j"$(nproc)" \
     && cp samtools /usr/bin/tools/samtools/ \
     && cp misc/*.pl /usr/bin/tools/samtools/
 
-RUN cp -r /tmp/IGVTools_v${IGVTOOLS_VERSION}/. /usr/bin/tools/igvtools/ \
-    && cp -r /tmp/muTect-${MUTECT_VERSION}/. /usr/bin/tools/mutect/ \
-    && cp -r /tmp/picard-tools-${PICARD_VERSION}/. /usr/bin/tools/picard/ \
-    && cp -r /tmp/GenomeAnalysisTK-${GATK_VERSION}/. /usr/bin/tools/gatk/ \
+RUN cp -r "/tmp/IGVTools_v${IGVTOOLS_VERSION}/." /usr/bin/tools/igvtools/ \
+    && cp -r "/tmp/muTect-${MUTECT_VERSION}/." /usr/bin/tools/mutect/ \
+    && cp -r "/tmp/picard-tools-${PICARD_VERSION}/." /usr/bin/tools/picard/ \
+    && cp -r "/tmp/GenomeAnalysisTK-${GATK_VERSION}/." /usr/bin/tools/gatk/ \
     && cp -r /tmp/trimgalore-0.2.5.mod/. /usr/bin/tools/trim_galore/ \
     && cp -r /tmp/FastQC /usr/bin/tools/FastQC \
     && chmod -R +x /usr/bin/tools/*
@@ -229,7 +231,7 @@ COPY --from=facets_suite_builder "/tmp/facets-suite-${FACETS_SUITE_VERSION}/" /u
 COPY --from=facets_preview_builder "/tmp/facets-preview-${FACETS_PREVIEW_VERSION}/" /usr/bin/facets-preview/
 COPY --from=facets_preview_builder /usr/local/lib/R/site-library/ /usr/local/lib/R/site-library/
 COPY --from=sg_tools_builder /usr/bin/tools/ /usr/bin/tools/
-COPY --from=download_and_unpack /tmp/r-scripts/ ${SOMATIC_GERMLINE_R_SCRIPT_LIB}/
+COPY --from=download_and_unpack /tmp/r-scripts/ "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/"
 
 RUN ldconfig \
     && ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
@@ -238,7 +240,7 @@ RUN ldconfig \
     && ln -sf /usr/bin/tools/igvtools/igvtools /usr/bin/igvtools \
     && ln -sf /usr/bin/tools/FastQC/fastqc /usr/bin/fastqc \
     && ln -sf /usr/bin/tools/mutect/muTect.jar /usr/bin/mutect.jar \
-    && ln -sf /usr/bin/tools/picard/picard-${PICARD_VERSION}.jar /usr/bin/picard.jar \
+    && ln -sf "/usr/bin/tools/picard/picard-${PICARD_VERSION}.jar" /usr/bin/picard.jar \
     && ln -sf /usr/bin/tools/gatk/GenomeAnalysisTK.jar /usr/bin/gatk.jar \
     && chmod +x /usr/bin/tools/*/* 2>/dev/null || true \
     && rm -rf /tmp/* /var/tmp/* \
