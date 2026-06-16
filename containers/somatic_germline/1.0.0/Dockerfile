@@ -21,7 +21,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
     BWA_VERSION=0.7.5a \
     GATK_VERSION=3.3-0 \
     IGVTOOLS_VERSION=2.3.12 \
-    MUTECT_VERSION=1.1.4 \
     PICARD_VERSION=1.96 \
     BWA_SHA256=d157d79710b938225875c9322fc9e9139666deb7ace401dd73a5a65f6dffd7dd \
     SAMTOOLS_VERSION=0.1.19 \
@@ -48,7 +47,6 @@ RUN apt-get update -qq \
         python3-pip \
         gcc \
         parallel \
-        default-jdk \
         perl \
         perl-modules \
         libstatistics-lite-perl \
@@ -59,7 +57,14 @@ RUN apt-get update -qq \
         tar \
         unzip \
         bzip2 \
+        gnupg \
         libcurl4-openssl-dev \
+    && wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public \
+        | gpg --dearmor -o /etc/apt/trusted.gpg.d/adoptium.gpg \
+    && echo "deb https://packages.adoptium.net/artifactory/deb $(. /etc/os-release && echo ${VERSION_CODENAME}) main" \
+        > /etc/apt/sources.list.d/adoptium.list \
+    && apt-get update -qq \
+    && apt-get install -y --no-install-recommends temurin-8-jre \
     && mkdir -p /usr/local/lib/site_perl \
     && curl -fsSL https://cpanmin.us | perl - App::cpanminus \
     && cpanm --notest Tie::Autotie \
@@ -189,7 +194,6 @@ RUN mkdir -p /usr/bin/tools/bwa \
     /usr/bin/tools/samtools \
     /usr/bin/tools/trim_galore \
     /usr/bin/tools/igvtools \
-    /usr/bin/tools/mutect \
     /usr/bin/tools/picard \
     /usr/bin/tools/gatk
 
@@ -208,7 +212,6 @@ RUN make -j"$(nproc)" \
     && cp misc/*.pl /usr/bin/tools/samtools/
 
 RUN cp -r "/tmp/IGVTools_v${IGVTOOLS_VERSION}/." /usr/bin/tools/igvtools/ \
-    && cp -r "/tmp/muTect-${MUTECT_VERSION}/." /usr/bin/tools/mutect/ \
     && cp -r "/tmp/picard-tools-${PICARD_VERSION}/." /usr/bin/tools/picard/ \
     && cp -r "/tmp/GenomeAnalysisTK-${GATK_VERSION}/." /usr/bin/tools/gatk/ \
     && cp -r /tmp/trimgalore-0.2.5.mod/. /usr/bin/tools/trim_galore/ \
@@ -239,7 +242,6 @@ RUN ldconfig \
     && ln -sf /usr/bin/tools/trim_galore/trim_galore /usr/bin/trim_galore \
     && ln -sf /usr/bin/tools/igvtools/igvtools /usr/bin/igvtools \
     && ln -sf /usr/bin/tools/FastQC/fastqc /usr/bin/fastqc \
-    && ln -sf /usr/bin/tools/mutect/muTect.jar /usr/bin/mutect.jar \
     && ln -sf "/usr/bin/tools/picard/picard-${PICARD_VERSION}.jar" /usr/bin/picard.jar \
     && ln -sf /usr/bin/tools/gatk/GenomeAnalysisTK.jar /usr/bin/gatk.jar \
     && chmod +x /usr/bin/tools/*/* 2>/dev/null || true \
@@ -282,11 +284,11 @@ RUN ldconfig \
             paste(failed, collapse=", ")); \
     message("All R package version checks passed.") \
     ' \
-    && bwa > /tmp/bwa.log 2>&1 || true \
+    && { bwa > /tmp/bwa.log 2>&1 || true; } \
     && grep -q "${BWA_VERSION}" /tmp/bwa.log \
-    && GetBaseCountsMultiSample > /tmp/getbasecounts.log 2>&1 || true \
+    && { GetBaseCountsMultiSample > /tmp/getbasecounts.log 2>&1 || true; } \
     && grep -q "${GET_BASE_COUNT_MULTISAMPLE_VERSION}" /tmp/getbasecounts.log \
-    && samtools > /tmp/samtools.log 2>&1 || true \
+    && { samtools > /tmp/samtools.log 2>&1 || true; } \
     && grep -q "${SAMTOOLS_VERSION}" /tmp/samtools.log \
     && bedtools --version | grep -q 'bedtools' \
     && fastqc --version | grep -q "${FASTQC_VERSION}" \
@@ -295,13 +297,11 @@ RUN ldconfig \
     && snp-pileup --help 2>&1 | grep -q 'vcf file' \
     && ppflag-fixer --help 2>&1 | grep -q 'input file' \
     && /usr/bin/facets-suite/run-facets-wrapper.R --help | grep -q 'COUNTS_FILE' \
-    && java -jar /usr/bin/mutect.jar > /tmp/mutect.log 2>&1 || true \
-    && grep -qi "mutect\\|${MUTECT_VERSION}" /tmp/mutect.log \
-    && java -jar /usr/bin/picard.jar > /tmp/picard.log 2>&1 || true \
-    && grep -qi "picard\\|${PICARD_VERSION}" /tmp/picard.log \
-    && java -jar /usr/bin/gatk.jar > /tmp/gatk.log 2>&1 || true \
-    && grep -qi "gatk\\|${GATK_VERSION}" /tmp/gatk.log \
-    && java -version \
+    && { java -jar /usr/bin/tools/picard/CollectInsertSizeMetrics.jar > /tmp/picard.log 2>&1 || true; } \
+    && grep -qi "${PICARD_VERSION}" /tmp/picard.log \
+    && { java -jar /usr/bin/tools/gatk/GenomeAnalysisTK.jar -T DepthOfCoverage --help > /tmp/gatk_depthofcoverage_help.log 2>&1 || true; } \
+    && grep -qi "DepthOfCoverage\\|USAGE" /tmp/gatk_depthofcoverage_help.log \
+    && java -version 2>&1 | grep -q '"1.8.' \
     && perl -e 'for my $m (qw(Tie::Autotie Tie::IxHash Statistics::Lite)) { eval "require $m; 1" or die "Missing Perl module $m: $@"; } print "Perl module checks passed.\\n";' \
     && perl -e 'use Vcf; print "Vcf.pm from vcftools loaded successfully.\\n";' \
     && test -f "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/AllMetrics_v1.2.r" \
