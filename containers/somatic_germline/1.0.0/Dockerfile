@@ -59,9 +59,9 @@ RUN apt-get update -qq \
         bzip2 \
         gnupg \
         libcurl4-openssl-dev \
-    && wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public \
+    && curl -s https://packages.adoptium.net/artifactory/api/gpg/key/public \
         | gpg --dearmor -o /etc/apt/trusted.gpg.d/adoptium.gpg \
-    && echo "deb https://packages.adoptium.net/artifactory/deb $(. /etc/os-release && echo ${VERSION_CODENAME}) main" \
+    && echo "deb https://packages.adoptium.net/artifactory/deb jammy main" \
         > /etc/apt/sources.list.d/adoptium.list \
     && apt-get update -qq \
     && apt-get install -y --no-install-recommends temurin-8-jre \
