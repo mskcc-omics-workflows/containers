@@ -67,7 +67,7 @@ RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends temurin-8-jre \
     && mkdir -p /usr/local/lib/site_perl \
     && curl -fsSL https://cpanmin.us | perl - App::cpanminus \
-    && cpanm --notest Tie::Autotie \
+    && cpanm --notest Tie::Autotie Log::Log4perl \
     && rm -rf /root/.cpanm \
     && pip3 install --no-cache-dir \
         numpy==1.26.4 pandas==2.2.3 python-dateutil==2.9.0.post0 pytz==2024.1 six==1.16.0 cutadapt==4.1 \
