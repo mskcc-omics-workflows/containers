@@ -235,6 +235,7 @@ COPY --from=facets_preview_builder "/tmp/facets-preview-${FACETS_PREVIEW_VERSION
 COPY --from=facets_preview_builder /usr/local/lib/R/site-library/ /usr/local/lib/R/site-library/
 COPY --from=sg_tools_builder /usr/bin/tools/ /usr/bin/tools/
 COPY --from=download_and_unpack /tmp/r-scripts/ "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/"
+COPY --from=download_and_unpack /usr/local/lib/site_perl/MSKCC_DMP_Logger_patched.pm /usr/local/lib/site_perl/MSKCC_DMP_Logger_patched.pm
 
 RUN ldconfig \
     && ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
