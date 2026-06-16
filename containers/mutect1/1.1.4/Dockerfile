@@ -1,4 +1,4 @@
-FROM openjdk:6
+FROM mskcc/openjdk:6
 
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="Nikhil Kumar (kumarn1@mskcc.org)" \
