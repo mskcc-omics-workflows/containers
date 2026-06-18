@@ -293,7 +293,7 @@ RUN ldconfig \
     && { GetBaseCountsMultiSample > /tmp/getbasecounts.log 2>&1 || true; } \
     && grep -q "${GET_BASE_COUNT_MULTISAMPLE_VERSION}" /tmp/getbasecounts.log \
     && { samtools > /tmp/samtools.log 2>&1 || true; } \
-    && { annotate_variation.pl --help > /tmp/annotate_variation.log 2>&1 || true; }
+    && { annotate_variation.pl --help > /tmp/annotate_variation.log 2>&1 || true; } \
     && grep -q "annotate_variation.pl" /tmp/annotate_variation.log \
     && grep -q "${SAMTOOLS_VERSION}" /tmp/samtools.log \
     && bedtools --version | grep -q 'bedtools' \
