@@ -307,7 +307,6 @@ RUN ldconfig \
     && grep -qi "${PICARD_VERSION}" /tmp/picard.log \
     && { java -jar /usr/bin/tools/gatk/GenomeAnalysisTK.jar -T DepthOfCoverage --help > /tmp/gatk_depthofcoverage_help.log 2>&1 || true; } \
     && grep -qi "DepthOfCoverage\\|USAGE" /tmp/gatk_depthofcoverage_help.log \
-    && 
     && java -version 2>&1 | grep -q '"1.8.' \
     && perl -e 'for my $m (qw(Tie::Autotie Tie::IxHash Statistics::Lite)) { eval "require $m; 1" or die "Missing Perl module $m: $@"; } print "Perl module checks passed.\\n";' \
     && perl -e 'use Vcf; print "Vcf.pm from vcftools loaded successfully.\\n";' \
