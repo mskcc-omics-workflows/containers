@@ -175,11 +175,14 @@ ENV PATH="/usr/local/bin:${PATH}"
 # Create symlinks for VEP versions and set first version as default
 RUN set -eux \
     && ln -sf /usr/local/vcf2maf/vcf2maf.pl /usr/local/bin/vcf2maf.pl \
+    && ln -sf /usr/local/vcf2maf/maf2maf.pl /usr/local/bin/maf2maf.pl \
     && chmod +x /usr/local/bin/vcf2maf.pl \
+    && chmod +x /usr/local/bin/maf2maf.pl \
     && apk del .build-deps \
     && rm -rf /var/cache/apk/* /tmp/* \
     && ldconfig /usr/local/lib 2>/dev/null || true \
     && vcf2maf.pl --help >/dev/null \
+    && maf2maf.pl --help >/dev/null \
     && /bin/bash -c "/usr/local/vep/${VEP_FIRST}/variant_effect_predictor.pl --help" >/dev/null \
     && /bin/bash -c "/usr/local/vep/${VEP_SECOND}/variant_effect_predictor.pl --help" >/dev/null \
     && bcftools --version >/dev/null \
