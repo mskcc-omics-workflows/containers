@@ -176,7 +176,7 @@ ENV PATH="/usr/local/bin:${PATH}"
 RUN set -eux \
     && ln -sf /usr/local/vcf2maf/vcf2maf.pl /usr/local/bin/vcf2maf.pl \
     && ln -sf /usr/local/vcf2maf/maf2maf.pl /usr/local/bin/maf2maf.pl \
-    && ln -sf /usr/local/vcf2maf/maf2maf.pl /usr/local/bin/maf2vcf.pl \
+    && ln -sf /usr/local/vcf2maf/maf2vcf.pl /usr/local/bin/maf2vcf.pl \
     && chmod +x /usr/local/bin/vcf2maf.pl \
     && chmod +x /usr/local/bin/maf2maf.pl \
     && chmod +x /usr/local/bin/maf2vcf.pl \
