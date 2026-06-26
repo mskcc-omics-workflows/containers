@@ -16,7 +16,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HTSTOOLS_VERSION=0.1.1 \
     FACETS_SUITE_VERSION=2.0.10 \
     FACETS_VERSION=0.5.14 \
-    FACETS_PREVIEW_VERSION=3.1.1 \
+    FACETS_PREVIEW_GITHASH=1eb9711fbf6c0e3afb91dd052cf63e60046e3f7d \
     PCTGCDATA=0.3.0 \
     BWA_VERSION=0.7.5a \
     GATK_VERSION=3.3-0 \
@@ -115,7 +115,8 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     && wget -q "https://sourceforge.net/projects/bio-bwa/files/bwa-${BWA_VERSION}.tar.bz2" \
     && wget -q "https://sourceforge.net/projects/samtools/files/samtools/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2" \
     && wget -q "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v${FASTQC_VERSION}.zip" \
-    && git clone --single-branch --branch "${FACETS_PREVIEW_VERSION}" https://github.com/mskcc/facets-preview.git "facets-preview-${FACETS_PREVIEW_VERSION}" \
+    && git clone https://github.com/mskcc/facets-preview.git facets-preview \
+    && git -C facets-preview checkout "${FACETS_PREVIEW_GITHASH}" \
     && tar -xzf /tmp/somatic_germline_tools.tar.gz -C /tmp \
     && mkdir -p /tmp/r-scripts \
     && cp AllMetrics_v1.2.r /tmp/r-scripts/ \
@@ -179,7 +180,7 @@ RUN R CMD INSTALL .
 
 FROM facets_suite_builder AS facets_preview_builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-WORKDIR "/tmp/facets-preview-${FACETS_PREVIEW_VERSION}"
+WORKDIR "/tmp/facets-preview"
 RUN mkdir -p inst/facets_qc \
     && cp -r facets_qc/* inst/facets_qc/ \
     && R CMD INSTALL .
@@ -231,7 +232,8 @@ COPY --from=htslib_builder /usr/lib/libhts.so* /usr/lib/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup" /usr/bin/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer" /usr/bin/
 COPY --from=facets_suite_builder "/tmp/facets-suite-${FACETS_SUITE_VERSION}/" /usr/bin/facets-suite/
-COPY --from=facets_preview_builder "/tmp/facets-preview-${FACETS_PREVIEW_VERSION}/" /usr/bin/facets-preview/
+COPY --from=facets_preview_builder "/tmp/facets-preview/" /usr/bin/facets-preview/
+COPY --from=facets_preview_builder "/tmp/facets-preview/Docker/fp_config.json" /usr/bin/facets-preview/
 COPY --from=facets_preview_builder /usr/local/lib/R/site-library/ /usr/local/lib/R/site-library/
 COPY --from=sg_tools_builder /usr/bin/tools/ /usr/bin/tools/
 COPY --from=download_and_unpack /tmp/r-scripts/ "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/"
