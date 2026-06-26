@@ -27,6 +27,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     SAMTOOLS_SHA256=d080c9d356e5f0ad334007e4461cbcee3c4ca97b8a7a5a48c44883cf9dee63d4 \
     GET_BASE_COUNT_MULTISAMPLE_VERSION=1.2.1 \
     FASTQC_VERSION=0.11.9 \
+    ANNOVAR=527 \
     PYTHONNOUSERSITE=set \
     FACETS_OVERRIDE_EXITCODE=set \
     SOMATIC_GERMLINE_TOOLS=https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/somatic_germline_tools.tar.gz \
@@ -67,7 +68,7 @@ RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends temurin-8-jre \
     && mkdir -p /usr/local/lib/site_perl \
     && curl -fsSL https://cpanmin.us | perl - App::cpanminus \
-    && cpanm --notest Tie::Autotie \
+    && cpanm --notest Tie::Autotie Log::Log4perl \
     && rm -rf /root/.cpanm \
     && pip3 install --no-cache-dir \
         numpy==1.26.4 pandas==2.2.3 python-dateutil==2.9.0.post0 pytz==2024.1 six==1.16.0 cutadapt==4.1 \
@@ -217,6 +218,7 @@ RUN cp -r "/tmp/IGVTools_v${IGVTOOLS_VERSION}/." /usr/bin/tools/igvtools/ \
     && cp -r "/tmp/GenomeAnalysisTK-${GATK_VERSION}/." /usr/bin/tools/gatk/ \
     && cp -r /tmp/trimgalore-0.2.5.mod/. /usr/bin/tools/trim_galore/ \
     && cp -r /tmp/FastQC /usr/bin/tools/FastQC \
+    && cp -r "/tmp/annovar_r${ANNOVAR}" /usr/bin/tools/annovar/ \
     && chmod -R +x /usr/bin/tools/*
 
 FROM runtime_base AS final
@@ -237,6 +239,7 @@ COPY --from=facets_preview_builder "/tmp/facets-preview/Docker/fp_config.json" /
 COPY --from=facets_preview_builder /usr/local/lib/R/site-library/ /usr/local/lib/R/site-library/
 COPY --from=sg_tools_builder /usr/bin/tools/ /usr/bin/tools/
 COPY --from=download_and_unpack /tmp/r-scripts/ "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/"
+COPY --from=download_and_unpack /usr/local/lib/site_perl/MSKCC_DMP_Logger_patched.pm /usr/local/lib/site_perl/MSKCC_DMP_Logger_patched.pm
 
 RUN ldconfig \
     && ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
@@ -244,6 +247,7 @@ RUN ldconfig \
     && ln -sf /usr/bin/tools/trim_galore/trim_galore /usr/bin/trim_galore \
     && ln -sf /usr/bin/tools/igvtools/igvtools /usr/bin/igvtools \
     && ln -sf /usr/bin/tools/FastQC/fastqc /usr/bin/fastqc \
+    && ln -sf /usr/bin/tools/annovar/annotate_variation.pl /usr/bin/annotate_variation.pl \
     && ln -sf "/usr/bin/tools/picard/picard-${PICARD_VERSION}.jar" /usr/bin/picard.jar \
     && ln -sf /usr/bin/tools/gatk/GenomeAnalysisTK.jar /usr/bin/gatk.jar \
     && chmod +x /usr/bin/tools/*/* 2>/dev/null || true \
@@ -291,6 +295,8 @@ RUN ldconfig \
     && { GetBaseCountsMultiSample > /tmp/getbasecounts.log 2>&1 || true; } \
     && grep -q "${GET_BASE_COUNT_MULTISAMPLE_VERSION}" /tmp/getbasecounts.log \
     && { samtools > /tmp/samtools.log 2>&1 || true; } \
+    && { annotate_variation.pl --help > /tmp/annotate_variation.log 2>&1 || true; } \
+    && grep -q "annotate_variation.pl" /tmp/annotate_variation.log \
     && grep -q "${SAMTOOLS_VERSION}" /tmp/samtools.log \
     && bedtools --version | grep -q 'bedtools' \
     && fastqc --version | grep -q "${FASTQC_VERSION}" \
