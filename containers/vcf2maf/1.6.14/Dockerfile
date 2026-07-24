@@ -13,8 +13,8 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
 
 # VEP versions to install: 86 (first/default), 88 (second)
 ENV VCF2MAF_VERSION=1.6.14 \
-    VEP_FIRST=86 \
-    VEP_SECOND=88 \
+    VEP_EIGHTYSIX=86 \
+    VEP_EIGHTYEIGHT=88 \
     HTSLIB_VERSION=1.9 \
     SAMTOOLS_VERSION=1.9 \
     BCFTOOLS_VERSION=1.9 \
@@ -105,14 +105,14 @@ WORKDIR /tmp
 RUN wget -q "https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSION}/htslib-${HTSLIB_VERSION}.tar.bz2" \
     && wget -q "https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2" \
     && wget -q "https://github.com/samtools/samtools/releases/download/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2" \
-    && wget -q "https://github.com/Ensembl/ensembl-tools/archive/release/${VEP_FIRST}.zip" -O "ensembl-tools-release-${VEP_FIRST}.zip" \
-    && wget -q "https://github.com/Ensembl/ensembl-tools/archive/release/${VEP_SECOND}.zip" -O "ensembl-tools-release-${VEP_SECOND}.zip" \
+    && wget -q "https://github.com/Ensembl/ensembl-tools/archive/release/${VEP_EIGHTYSIX}.zip" -O "ensembl-tools-release-${VEP_EIGHTYSIX}.zip" \
+    && wget -q "https://github.com/Ensembl/ensembl-tools/archive/release/${VEP_EIGHTYEIGHT}.zip" -O "ensembl-tools-release-${VEP_EIGHTYEIGHT}.zip" \
     && wget -q "https://github.com/mskcc/vcf2maf/archive/v${VCF2MAF_VERSION}.zip" -O "vcf2maf-v${VCF2MAF_VERSION}.zip" \
     && tar -xjf "htslib-${HTSLIB_VERSION}.tar.bz2" \
     && tar -xjf "bcftools-${BCFTOOLS_VERSION}.tar.bz2" \
     && tar -xjf "samtools-${SAMTOOLS_VERSION}.tar.bz2" \
-    && unzip -q "ensembl-tools-release-${VEP_FIRST}.zip" -d "${VEP_FIRST}" \
-    && unzip -q "ensembl-tools-release-${VEP_SECOND}.zip" -d "${VEP_SECOND}" \
+    && unzip -q "ensembl-tools-release-${VEP_EIGHTYSIX}.zip" -d "${VEP_EIGHTYSIX}" \
+    && unzip -q "ensembl-tools-release-${VEP_EIGHTYEIGHT}.zip" -d "${VEP_EIGHTYEIGHT}" \
     && unzip -q "vcf2maf-v${VCF2MAF_VERSION}.zip"
 
 FROM download_and_unpack AS htslib_builder
@@ -136,7 +136,7 @@ RUN ./configure --with-htslib="/tmp/htslib-${HTSLIB_VERSION}" && make -j"$(nproc
 # Build VEP (first version)
 FROM samtools_builder AS vep_first_builder
 
-WORKDIR "/tmp/${VEP_FIRST}/ensembl-tools-release-${VEP_FIRST}/scripts/variant_effect_predictor"
+WORKDIR "/tmp/${VEP_EIGHTYSIX}/ensembl-tools-release-${VEP_EIGHTYSIX}/scripts/variant_effect_predictor"
 
 RUN perl INSTALL.pl --AUTO a --NO_HTSLIB \
     && cp -r ../variant_effect_predictor /usr/local/vep/
@@ -144,7 +144,7 @@ RUN perl INSTALL.pl --AUTO a --NO_HTSLIB \
 # Build VEP (second version)
 FROM samtools_builder AS vep_second_builder
 
-WORKDIR "/tmp/${VEP_SECOND}/ensembl-tools-release-${VEP_SECOND}/scripts/variant_effect_predictor"
+WORKDIR "/tmp/${VEP_EIGHTYEIGHT}/ensembl-tools-release-${VEP_EIGHTYEIGHT}/scripts/variant_effect_predictor"
 
 RUN perl INSTALL.pl --AUTO a --NO_HTSLIB \
     && cp -r ../variant_effect_predictor /usr/local/vep/
@@ -166,8 +166,8 @@ COPY --from=vcf2maf_builder /usr/local/bin/bgzip    /usr/local/bin/bgzip
 COPY --from=vcf2maf_builder /usr/local/lib/libhts.so* /usr/local/lib/
 COPY --from=vcf2maf_builder /usr/local/lib/perl5    /usr/local/lib/perl5
 COPY --from=vcf2maf_builder /usr/local/share/perl5  /usr/local/share/perl5
-COPY --from=vep_first_builder /usr/local/vep/        "/usr/local/vep/${VEP_FIRST}"
-COPY --from=vep_second_builder /usr/local/vep/       "/usr/local/vep/${VEP_SECOND}"
+COPY --from=vep_first_builder /usr/local/vep/        "/usr/local/vep/${VEP_EIGHTYSIX}"
+COPY --from=vep_second_builder /usr/local/vep/       "/usr/local/vep/${VEP_EIGHTYEIGHT}"
 COPY --from=vcf2maf_builder /usr/local/vcf2maf            /usr/local/vcf2maf
 
 ENV PATH="/usr/local/bin:${PATH}"
@@ -177,6 +177,10 @@ RUN set -eux \
     && ln -sf /usr/local/vcf2maf/vcf2maf.pl /usr/local/bin/vcf2maf.pl \
     && ln -sf /usr/local/vcf2maf/maf2maf.pl /usr/local/bin/maf2maf.pl \
     && ln -sf /usr/local/vcf2maf/maf2vcf.pl /usr/local/bin/maf2vcf.pl \
+    && ln -sf "/usr/local/vep/${VEP_EIGHTYSIX}/variant_effect_predictor.pl" /usr/local/bin/vep86 \
+    && ln -sf "/usr/local/vep/${VEP_EIGHTYEIGHT}/variant_effect_predictor.pl" /usr/local/bin/vep88 \
+    && ln -sf /usr/local/bin/vep86 /usr/local/bin/variant_effect_predictor.pl \
+    && ln -sf /usr/local/bin/vep86 /usr/local/bin/vep \
     && chmod +x /usr/local/bin/vcf2maf.pl \
     && chmod +x /usr/local/bin/maf2maf.pl \
     && chmod +x /usr/local/bin/maf2vcf.pl \
@@ -186,8 +190,10 @@ RUN set -eux \
     && vcf2maf.pl --help >/dev/null \
     && maf2maf.pl --help >/dev/null \
     && maf2vcf.pl --help >/dev/null \
-    && /bin/bash -c "/usr/local/vep/${VEP_FIRST}/variant_effect_predictor.pl --help" >/dev/null \
-    && /bin/bash -c "/usr/local/vep/${VEP_SECOND}/variant_effect_predictor.pl --help" >/dev/null \
+    && /bin/bash -c "/usr/local/vep/${VEP_EIGHTYSIX}/variant_effect_predictor.pl --help" >/dev/null \
+    && /bin/bash -c "/usr/local/vep/${VEP_EIGHTYEIGHT}/variant_effect_predictor.pl --help" >/dev/null \
+    && /bin/bash -c "/usr/local/vep/vep86 --help" >/dev/null \
+    && /bin/bash -c "/usr/local/vep/vep88 --help" >/dev/null \
     && bcftools --version >/dev/null \
     && samtools --version >/dev/null \
     && perl -e 'for my $m (qw( \
