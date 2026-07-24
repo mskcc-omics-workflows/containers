@@ -13,6 +13,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
 
 ENV DEBIAN_FRONTEND=noninteractive \
     MUTECT_SOURCE=https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/mutect_1.1.4/muTect.jar \
+    MUTECT_VERSION=1.1.4
     LC_ALL=C.UTF-8 \
     LANG=C.UTF-8
 
@@ -32,7 +33,7 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
         unzip \
         bzip2 \
     && wget --progress=dot:giga --no-check-certificate --directory-prefix /usr/bin/ --user="$(cat /run/secrets/MSK_JFROG_USERNAME)" --password="$(cat /run/secrets/MSK_JFROG_TOKEN)" "${MUTECT_SOURCE}" \
-    && { java -jar /usr/bin/mutect.jar > /tmp/mutect.log 2>&1 || true; } \
+    && { java -jar /usr/bin/muTect.jar > /tmp/mutect.log 2>&1 || true; } \
     && grep -qi "mutect\\|${MUTECT_VERSION}" /tmp/mutect.log \
     && apt-get clean \
     && rm -rf /tmp/* \
