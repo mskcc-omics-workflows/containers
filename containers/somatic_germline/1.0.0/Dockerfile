@@ -16,7 +16,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HTSTOOLS_VERSION=0.1.1 \
     FACETS_SUITE_VERSION=2.0.10 \
     FACETS_VERSION=0.5.14 \
-    FACETS_PREVIEW_VERSION=3.1.1 \
+    FACETS_PREVIEW_GITHASH=1eb9711fbf6c0e3afb91dd052cf63e60046e3f7d \
     PCTGCDATA=0.3.0 \
     BWA_VERSION=0.7.5a \
     GATK_VERSION=3.3-0 \
@@ -27,6 +27,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     SAMTOOLS_SHA256=d080c9d356e5f0ad334007e4461cbcee3c4ca97b8a7a5a48c44883cf9dee63d4 \
     GET_BASE_COUNT_MULTISAMPLE_VERSION=1.2.1 \
     FASTQC_VERSION=0.11.9 \
+    ANNOVAR=527 \
     PYTHONNOUSERSITE=set \
     FACETS_OVERRIDE_EXITCODE=set \
     SOMATIC_GERMLINE_TOOLS=https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/somatic_germline_tools.tar.gz \
@@ -67,7 +68,7 @@ RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends temurin-8-jre \
     && mkdir -p /usr/local/lib/site_perl \
     && curl -fsSL https://cpanmin.us | perl - App::cpanminus \
-    && cpanm --notest Tie::Autotie \
+    && cpanm --notest Tie::Autotie Log::Log4perl \
     && rm -rf /root/.cpanm \
     && pip3 install --no-cache-dir \
         numpy==1.26.4 pandas==2.2.3 python-dateutil==2.9.0.post0 pytz==2024.1 six==1.16.0 cutadapt==4.1 \
@@ -115,7 +116,8 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     && wget -q "https://sourceforge.net/projects/bio-bwa/files/bwa-${BWA_VERSION}.tar.bz2" \
     && wget -q "https://sourceforge.net/projects/samtools/files/samtools/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2" \
     && wget -q "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v${FASTQC_VERSION}.zip" \
-    && git clone --single-branch --branch "${FACETS_PREVIEW_VERSION}" https://github.com/mskcc/facets-preview.git "facets-preview-${FACETS_PREVIEW_VERSION}" \
+    && git clone https://github.com/mskcc/facets-preview.git facets-preview \
+    && git -C facets-preview checkout "${FACETS_PREVIEW_GITHASH}" \
     && tar -xzf /tmp/somatic_germline_tools.tar.gz -C /tmp \
     && mkdir -p /tmp/r-scripts \
     && cp AllMetrics_v1.2.r /tmp/r-scripts/ \
@@ -179,7 +181,7 @@ RUN R CMD INSTALL .
 
 FROM facets_suite_builder AS facets_preview_builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-WORKDIR "/tmp/facets-preview-${FACETS_PREVIEW_VERSION}"
+WORKDIR "/tmp/facets-preview"
 RUN mkdir -p inst/facets_qc \
     && cp -r facets_qc/* inst/facets_qc/ \
     && R CMD INSTALL .
@@ -216,6 +218,7 @@ RUN cp -r "/tmp/IGVTools_v${IGVTOOLS_VERSION}/." /usr/bin/tools/igvtools/ \
     && cp -r "/tmp/GenomeAnalysisTK-${GATK_VERSION}/." /usr/bin/tools/gatk/ \
     && cp -r /tmp/trimgalore-0.2.5.mod/. /usr/bin/tools/trim_galore/ \
     && cp -r /tmp/FastQC /usr/bin/tools/FastQC \
+    && cp -r "/tmp/annovar_r${ANNOVAR}" /usr/bin/tools/annovar/ \
     && chmod -R +x /usr/bin/tools/*
 
 FROM runtime_base AS final
@@ -231,17 +234,19 @@ COPY --from=htslib_builder /usr/lib/libhts.so* /usr/lib/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup" /usr/bin/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer" /usr/bin/
 COPY --from=facets_suite_builder "/tmp/facets-suite-${FACETS_SUITE_VERSION}/" /usr/bin/facets-suite/
-COPY --from=facets_preview_builder "/tmp/facets-preview-${FACETS_PREVIEW_VERSION}/" /usr/bin/facets-preview/
+COPY --from=facets_preview_builder "/tmp/facets-preview/" /usr/bin/facets-preview/
+COPY --from=facets_preview_builder "/tmp/facets-preview/Docker/fp_config.json" /usr/bin/facets-preview/
 COPY --from=facets_preview_builder /usr/local/lib/R/site-library/ /usr/local/lib/R/site-library/
 COPY --from=sg_tools_builder /usr/bin/tools/ /usr/bin/tools/
 COPY --from=download_and_unpack /tmp/r-scripts/ "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/"
+COPY --from=download_and_unpack /usr/local/lib/site_perl/MSKCC_DMP_Logger_patched.pm /usr/local/lib/site_perl/MSKCC_DMP_Logger_patched.pm
 
-RUN ldconfig \
-    && ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
+RUN ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
     && ln -sf /usr/bin/tools/samtools/samtools /usr/bin/samtools \
     && ln -sf /usr/bin/tools/trim_galore/trim_galore /usr/bin/trim_galore \
     && ln -sf /usr/bin/tools/igvtools/igvtools /usr/bin/igvtools \
     && ln -sf /usr/bin/tools/FastQC/fastqc /usr/bin/fastqc \
+    && ln -sf /usr/bin/tools/annovar/annotate_variation.pl /usr/bin/annotate_variation.pl \
     && ln -sf "/usr/bin/tools/picard/picard-${PICARD_VERSION}.jar" /usr/bin/picard.jar \
     && ln -sf /usr/bin/tools/gatk/GenomeAnalysisTK.jar /usr/bin/gatk.jar \
     && chmod +x /usr/bin/tools/*/* 2>/dev/null || true \
@@ -289,6 +294,8 @@ RUN ldconfig \
     && { GetBaseCountsMultiSample > /tmp/getbasecounts.log 2>&1 || true; } \
     && grep -q "${GET_BASE_COUNT_MULTISAMPLE_VERSION}" /tmp/getbasecounts.log \
     && { samtools > /tmp/samtools.log 2>&1 || true; } \
+    && { annotate_variation.pl --help > /tmp/annotate_variation.log 2>&1 || true; } \
+    && grep -q "annotate_variation.pl" /tmp/annotate_variation.log \
     && grep -q "${SAMTOOLS_VERSION}" /tmp/samtools.log \
     && bedtools --version | grep -q 'bedtools' \
     && fastqc --version | grep -q "${FASTQC_VERSION}" \
