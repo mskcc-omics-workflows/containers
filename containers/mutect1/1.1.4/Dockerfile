@@ -13,7 +13,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
 
 ENV DEBIAN_FRONTEND=noninteractive \
     MUTECT_SOURCE=https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/mutect_1.1.4/muTect.jar \
-    MUTECT_VERSION=1.1.4
+    MUTECT_VERSION=1.1.4 \
     LC_ALL=C.UTF-8 \
     LANG=C.UTF-8
 
