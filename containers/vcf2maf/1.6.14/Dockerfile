@@ -11,9 +11,10 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.title="VCF2MAF" \
       org.opencontainers.image.description="VCF to MAF conversion tool for somatic variant annotation and analysis"
 
+# VEP versions to install: 86 (first/default), 88 (second)
 ENV VCF2MAF_VERSION=1.6.14 \
-    VEP_VERSION=86 \
-    VEP_PATH=/usr/local/bin/vep \
+    VEP_FIRST=86 \
+    VEP_SECOND=88 \
     HTSLIB_VERSION=1.9 \
     SAMTOOLS_VERSION=1.9 \
     BCFTOOLS_VERSION=1.9 \
@@ -100,15 +101,18 @@ FROM base AS download_and_unpack
 
 WORKDIR /tmp
 
+# Download samtools, bcftools, htslib and all VEP versions
 RUN wget -q "https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSION}/htslib-${HTSLIB_VERSION}.tar.bz2" \
     && wget -q "https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2" \
     && wget -q "https://github.com/samtools/samtools/releases/download/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2" \
-    && wget -q "https://github.com/Ensembl/ensembl-tools/archive/release/${VEP_VERSION}.zip" -O "ensembl-tools-release-${VEP_VERSION}.zip" \
+    && wget -q "https://github.com/Ensembl/ensembl-tools/archive/release/${VEP_FIRST}.zip" -O "ensembl-tools-release-${VEP_FIRST}.zip" \
+    && wget -q "https://github.com/Ensembl/ensembl-tools/archive/release/${VEP_SECOND}.zip" -O "ensembl-tools-release-${VEP_SECOND}.zip" \
     && wget -q "https://github.com/mskcc/vcf2maf/archive/v${VCF2MAF_VERSION}.zip" -O "vcf2maf-v${VCF2MAF_VERSION}.zip" \
     && tar -xjf "htslib-${HTSLIB_VERSION}.tar.bz2" \
     && tar -xjf "bcftools-${BCFTOOLS_VERSION}.tar.bz2" \
     && tar -xjf "samtools-${SAMTOOLS_VERSION}.tar.bz2" \
-    && unzip -q "ensembl-tools-release-${VEP_VERSION}.zip" \
+    && unzip -q "ensembl-tools-release-${VEP_FIRST}.zip" -d "${VEP_FIRST}" \
+    && unzip -q "ensembl-tools-release-${VEP_SECOND}.zip" -d "${VEP_SECOND}" \
     && unzip -q "vcf2maf-v${VCF2MAF_VERSION}.zip"
 
 FROM download_and_unpack AS htslib_builder
@@ -129,21 +133,29 @@ WORKDIR "/tmp/samtools-${SAMTOOLS_VERSION}"
 
 RUN ./configure --with-htslib="/tmp/htslib-${HTSLIB_VERSION}" && make -j"$(nproc)" && make install
 
-FROM samtools_builder AS vep_builder
+# Build VEP (first version)
+FROM samtools_builder AS vep_first_builder
 
-WORKDIR "/tmp/ensembl-tools-release-${VEP_VERSION}/scripts/variant_effect_predictor"
+WORKDIR "/tmp/${VEP_FIRST}/ensembl-tools-release-${VEP_FIRST}/scripts/variant_effect_predictor"
 
 RUN perl INSTALL.pl --AUTO a --NO_HTSLIB \
-    && mv "/tmp/ensembl-tools-release-${VEP_VERSION}/scripts/variant_effect_predictor" /usr/local/vep
+    && cp -r ../variant_effect_predictor /usr/local/vep/
 
-FROM vep_builder AS vcf2maf_builder
+# Build VEP (second version)
+FROM samtools_builder AS vep_second_builder
+
+WORKDIR "/tmp/${VEP_SECOND}/ensembl-tools-release-${VEP_SECOND}/scripts/variant_effect_predictor"
+
+RUN perl INSTALL.pl --AUTO a --NO_HTSLIB \
+    && cp -r ../variant_effect_predictor /usr/local/vep/
+
+FROM vep_first_builder AS vcf2maf_builder
 
 WORKDIR "/tmp/vcf2maf-${VCF2MAF_VERSION}"
 
 RUN mkdir -p /usr/local/vcf2maf \
     && cp -a . /usr/local/vcf2maf/ \
-    && ln -sf /usr/local/vcf2maf/vcf2maf.pl /usr/local/bin/vcf2maf.pl \
-    && ln -sf /usr/local/vep/vep /usr/local/bin/vep
+    && ln -sf /usr/local/vcf2maf/vcf2maf.pl /usr/local/bin/vcf2maf.pl
 
 FROM base AS final
 
@@ -154,20 +166,22 @@ COPY --from=vcf2maf_builder /usr/local/bin/bgzip    /usr/local/bin/bgzip
 COPY --from=vcf2maf_builder /usr/local/lib/libhts.so* /usr/local/lib/
 COPY --from=vcf2maf_builder /usr/local/lib/perl5    /usr/local/lib/perl5
 COPY --from=vcf2maf_builder /usr/local/share/perl5  /usr/local/share/perl5
-COPY --from=vcf2maf_builder /usr/local/vep                /usr/local/vep
+COPY --from=vep_first_builder /usr/local/vep/        "/usr/local/vep/${VEP_FIRST}"
+COPY --from=vep_second_builder /usr/local/vep/       "/usr/local/vep/${VEP_SECOND}"
 COPY --from=vcf2maf_builder /usr/local/vcf2maf            /usr/local/vcf2maf
 
 ENV PATH="/usr/local/bin:${PATH}"
 
+# Create symlinks for VEP versions and set first version as default
 RUN set -eux \
-    && ln -sf /usr/local/vep/variant_effect_predictor.pl /usr/local/bin/variant_effect_predictor.pl \
     && ln -sf /usr/local/vcf2maf/vcf2maf.pl /usr/local/bin/vcf2maf.pl \
     && chmod +x /usr/local/bin/vcf2maf.pl \
     && apk del .build-deps \
     && rm -rf /var/cache/apk/* /tmp/* \
     && ldconfig /usr/local/lib 2>/dev/null || true \
     && vcf2maf.pl --help >/dev/null \
-    && variant_effect_predictor.pl --help >/dev/null \
+    && /bin/bash -c "/usr/local/vep/${VEP_FIRST}/variant_effect_predictor.pl --help" >/dev/null \
+    && /bin/bash -c "/usr/local/vep/${VEP_SECOND}/variant_effect_predictor.pl --help" >/dev/null \
     && bcftools --version >/dev/null \
     && samtools --version >/dev/null \
     && perl -e 'for my $m (qw( \

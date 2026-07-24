@@ -16,23 +16,26 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HTSTOOLS_VERSION=0.1.1 \
     FACETS_SUITE_VERSION=2.0.10 \
     FACETS_VERSION=0.5.14 \
-    FACETS_PREVIEW_VERSION=3.1.1 \
+    FACETS_PREVIEW_GITHASH=1eb9711fbf6c0e3afb91dd052cf63e60046e3f7d \
     PCTGCDATA=0.3.0 \
     BWA_VERSION=0.7.5a \
     GATK_VERSION=3.3-0 \
     IGVTOOLS_VERSION=2.3.12 \
-    MUTECT_VERSION=1.1.4 \
     PICARD_VERSION=1.96 \
     BWA_SHA256=d157d79710b938225875c9322fc9e9139666deb7ace401dd73a5a65f6dffd7dd \
     SAMTOOLS_VERSION=0.1.19 \
     SAMTOOLS_SHA256=d080c9d356e5f0ad334007e4461cbcee3c4ca97b8a7a5a48c44883cf9dee63d4 \
     GET_BASE_COUNT_MULTISAMPLE_VERSION=1.2.1 \
     FASTQC_VERSION=0.11.9 \
+    ANNOVAR=527 \
     PYTHONNOUSERSITE=set \
     FACETS_OVERRIDE_EXITCODE=set \
     SOMATIC_GERMLINE_TOOLS=https://mskcc.jfrog.io/artifactory/omicswf-generic-prod-local/somatic_germline_tools.tar.gz \
+    SOMATIC_GERMLINE_R_SCRIPT_LIB=/usr/local/lib/R/site-library/somatic_germline_tools \
     LC_ALL=C.UTF-8 \
     LANG=C.UTF-8
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends \
@@ -45,15 +48,28 @@ RUN apt-get update -qq \
         python3-pip \
         gcc \
         parallel \
-        default-jdk \
         perl \
         perl-modules \
+        libstatistics-lite-perl \
+        libtie-ixhash-perl \
+        vcftools \
         bedtools \
         procps \
         tar \
         unzip \
         bzip2 \
+        gnupg \
         libcurl4-openssl-dev \
+    && curl -s https://packages.adoptium.net/artifactory/api/gpg/key/public \
+        | gpg --dearmor -o /etc/apt/trusted.gpg.d/adoptium.gpg \
+    && echo "deb https://packages.adoptium.net/artifactory/deb jammy main" \
+        > /etc/apt/sources.list.d/adoptium.list \
+    && apt-get update -qq \
+    && apt-get install -y --no-install-recommends temurin-8-jre \
+    && mkdir -p /usr/local/lib/site_perl \
+    && curl -fsSL https://cpanmin.us | perl - App::cpanminus \
+    && cpanm --notest Tie::Autotie Log::Log4perl \
+    && rm -rf /root/.cpanm \
     && pip3 install --no-cache-dir \
         numpy==1.26.4 pandas==2.2.3 python-dateutil==2.9.0.post0 pytz==2024.1 six==1.16.0 cutadapt==4.1 \
     && apt-get clean \
@@ -75,7 +91,7 @@ RUN apt-get update -qq \
         liblzma-dev \
         python3-dev \
     && R -e "options(repos=c(CRAN='https://packagemanager.posit.co/cran/__linux__/jammy/2025-06-01')); \
-    install.packages(c('plyr','diptest','DT','bit','bit64','Ckmeans.1d.dp','gplots','memoise', \
+    install.packages(c('plyr','optparse','diptest','DT','bit','bit64','Ckmeans.1d.dp','gplots','memoise', \
     'rappdirs','rbibutils','Rdpack','tinytex','crosstalk'), Ncpus=parallel::detectCores()); \
     if (!requireNamespace('BiocManager', quietly=TRUE)) install.packages('BiocManager'); \
     BiocManager::install('DNAcopy', ask=FALSE, update=FALSE)" \
@@ -100,21 +116,26 @@ RUN --mount=type=secret,id=MSK_JFROG_USERNAME \
     && wget -q "https://sourceforge.net/projects/bio-bwa/files/bwa-${BWA_VERSION}.tar.bz2" \
     && wget -q "https://sourceforge.net/projects/samtools/files/samtools/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2" \
     && wget -q "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v${FASTQC_VERSION}.zip" \
-    && git clone --single-branch --branch ${FACETS_PREVIEW_VERSION} https://github.com/mskcc/facets-preview.git facets-preview-${FACETS_PREVIEW_VERSION} \
+    && git clone https://github.com/mskcc/facets-preview.git facets-preview \
+    && git -C facets-preview checkout "${FACETS_PREVIEW_GITHASH}" \
     && tar -xzf /tmp/somatic_germline_tools.tar.gz -C /tmp \
+    && mkdir -p /tmp/r-scripts \
+    && cp AllMetrics_v1.2.r /tmp/r-scripts/ \
+    && cp textplot.R /tmp/r-scripts/ \
     && rm /tmp/somatic_germline_tools.tar.gz \
     && tar xjf "htslib-${HTSLIB_VERSION}.tar.bz2" \
     && tar xzf "snp_pileup_${HTSTOOLS_VERSION}.tar.gz" \
     && tar xzf "facets-v${FACETS_VERSION}.tar.gz" \
     && tar xzf "pctGCdata-v${PCTGCDATA}.tar.gz" \
     && tar xzf "facets-suite-${FACETS_SUITE_VERSION}.tar.gz" \
+    && cp MSKCC_DMP_Logger_patched.pm /usr/local/lib/site_perl/MSKCC_DMP_Logger_patched.pm \
     && echo "${BWA_SHA256}  bwa-${BWA_VERSION}.tar.bz2" | sha256sum -c - \
     && echo "${SAMTOOLS_SHA256}  samtools-${SAMTOOLS_VERSION}.tar.bz2" | sha256sum -c - \
     && tar xjf "bwa-${BWA_VERSION}.tar.bz2" \
     && tar xjf "samtools-${SAMTOOLS_VERSION}.tar.bz2" \
     && tar xzf "v${GET_BASE_COUNT_MULTISAMPLE_VERSION}.tar.gz" \
-    && rm -rf GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build \
-    && mkdir -p GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build \
+    && rm -rf "GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build" \
+    && mkdir -p "GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}/bamtools-master/build" \
     && unzip -q "fastqc_v${FASTQC_VERSION}.zip" \
     && rm -f "fastqc_v${FASTQC_VERSION}.zip"
 
@@ -128,7 +149,7 @@ RUN cmake -DCMAKE_CXX_FLAGS=-std=c++03 .. \
 
 FROM bamtools_builder AS getbasecounts_builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-WORKDIR /tmp/GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}
+WORKDIR "/tmp/GetBaseCountsMultiSample-${GET_BASE_COUNT_MULTISAMPLE_VERSION}"
 RUN make -j"$(nproc)" \
     && cp GetBaseCountsMultiSample /usr/bin/
 
@@ -160,7 +181,7 @@ RUN R CMD INSTALL .
 
 FROM facets_suite_builder AS facets_preview_builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-WORKDIR /tmp/facets-preview-${FACETS_PREVIEW_VERSION}
+WORKDIR "/tmp/facets-preview"
 RUN mkdir -p inst/facets_qc \
     && cp -r facets_qc/* inst/facets_qc/ \
     && R CMD INSTALL .
@@ -175,11 +196,10 @@ RUN mkdir -p /usr/bin/tools/bwa \
     /usr/bin/tools/samtools \
     /usr/bin/tools/trim_galore \
     /usr/bin/tools/igvtools \
-    /usr/bin/tools/mutect \
     /usr/bin/tools/picard \
     /usr/bin/tools/gatk
 
-WORKDIR /tmp/bwa-${BWA_VERSION}
+WORKDIR "/tmp/bwa-${BWA_VERSION}"
 # Arm64 build: use sse2neon compatibility header to map SSE intrinsics to NEON
 RUN case "${TARGETPLATFORM}" in \
     *arm64*) wget -q -O /usr/local/include/sse2neon.h https://raw.githubusercontent.com/DLTcollab/sse2neon/master/sse2neon.h \
@@ -188,24 +208,25 @@ RUN case "${TARGETPLATFORM}" in \
     && make -j"$(nproc)" \
     && cp bwa /usr/bin/tools/bwa/
 
-WORKDIR /tmp/samtools-${SAMTOOLS_VERSION}
+WORKDIR "/tmp/samtools-${SAMTOOLS_VERSION}"
 RUN make -j"$(nproc)" \
     && cp samtools /usr/bin/tools/samtools/ \
     && cp misc/*.pl /usr/bin/tools/samtools/
 
-RUN cp -r /tmp/tools/IGVTools_v${IGVTOOLS_VERSION}/. /usr/bin/tools/igvtools/ \
-    && cp -r /tmp/tools/muTect-${MUTECT_VERSION}/. /usr/bin/tools/mutect/ \
-    && cp -r /tmp/tools/picard-tools-${PICARD_VERSION}/. /usr/bin/tools/picard/ \
-    && cp -r /tmp/tools/GenomeAnalysisTK-${GATK_VERSION}/. /usr/bin/tools/gatk/ \
-    && cp -r /tmp/tools/trimgalore-0.2.5.mod/. /usr/bin/tools/trim_galore/ \
+RUN cp -r "/tmp/IGVTools_v${IGVTOOLS_VERSION}/." /usr/bin/tools/igvtools/ \
+    && cp -r "/tmp/picard-tools-${PICARD_VERSION}/." /usr/bin/tools/picard/ \
+    && cp -r "/tmp/GenomeAnalysisTK-${GATK_VERSION}/." /usr/bin/tools/gatk/ \
+    && cp -r /tmp/trimgalore-0.2.5.mod/. /usr/bin/tools/trim_galore/ \
     && cp -r /tmp/FastQC /usr/bin/tools/FastQC \
+    && cp -r "/tmp/annovar_r${ANNOVAR}" /usr/bin/tools/annovar/ \
     && chmod -R +x /usr/bin/tools/*
 
 FROM runtime_base AS final
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-ENV PATH=/usr/bin/tools:/usr/bin:$PATH
+ENV PATH=/usr/bin/tools:/usr/bin:$PATH \
+    PERL5LIB=/usr/share/perl5:/usr/lib/perl5
 
 COPY --from=bamtools_builder /usr/lib/libbamtools.so.2.3.0 /usr/lib/
 COPY --from=getbasecounts_builder /usr/bin/GetBaseCountsMultiSample /usr/bin/
@@ -213,18 +234,20 @@ COPY --from=htslib_builder /usr/lib/libhts.so* /usr/lib/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/snp-pileup" /usr/bin/
 COPY --from=htstools_builder "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}/ppflag-fixer" /usr/bin/
 COPY --from=facets_suite_builder "/tmp/facets-suite-${FACETS_SUITE_VERSION}/" /usr/bin/facets-suite/
-COPY --from=facets_preview_builder "/tmp/facets-preview-${FACETS_PREVIEW_VERSION}/" /usr/bin/facets-preview/
+COPY --from=facets_preview_builder "/tmp/facets-preview/" /usr/bin/facets-preview/
+COPY --from=facets_preview_builder "/tmp/facets-preview/Docker/fp_config.json" /usr/bin/facets-preview/
 COPY --from=facets_preview_builder /usr/local/lib/R/site-library/ /usr/local/lib/R/site-library/
 COPY --from=sg_tools_builder /usr/bin/tools/ /usr/bin/tools/
+COPY --from=download_and_unpack /tmp/r-scripts/ "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/"
+COPY --from=download_and_unpack /usr/local/lib/site_perl/MSKCC_DMP_Logger_patched.pm /usr/local/lib/site_perl/MSKCC_DMP_Logger_patched.pm
 
-RUN ldconfig \
-    && ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
+RUN ln -sf /usr/bin/tools/bwa/bwa /usr/bin/bwa \
     && ln -sf /usr/bin/tools/samtools/samtools /usr/bin/samtools \
     && ln -sf /usr/bin/tools/trim_galore/trim_galore /usr/bin/trim_galore \
     && ln -sf /usr/bin/tools/igvtools/igvtools /usr/bin/igvtools \
     && ln -sf /usr/bin/tools/FastQC/fastqc /usr/bin/fastqc \
-    && ln -sf /usr/bin/tools/mutect/muTect.jar /usr/bin/mutect.jar \
-    && ln -sf /usr/bin/tools/picard/picard-${PICARD_VERSION}.jar /usr/bin/picard.jar \
+    && ln -sf /usr/bin/tools/annovar/annotate_variation.pl /usr/bin/annotate_variation.pl \
+    && ln -sf "/usr/bin/tools/picard/picard-${PICARD_VERSION}.jar" /usr/bin/picard.jar \
     && ln -sf /usr/bin/tools/gatk/GenomeAnalysisTK.jar /usr/bin/gatk.jar \
     && chmod +x /usr/bin/tools/*/* 2>/dev/null || true \
     && rm -rf /tmp/* /var/tmp/* \
@@ -266,11 +289,13 @@ RUN ldconfig \
             paste(failed, collapse=", ")); \
     message("All R package version checks passed.") \
     ' \
-    && bwa > /tmp/bwa.log 2>&1 || true \
+    && { bwa > /tmp/bwa.log 2>&1 || true; } \
     && grep -q "${BWA_VERSION}" /tmp/bwa.log \
-    && GetBaseCountsMultiSample > /tmp/getbasecounts.log 2>&1 || true \
+    && { GetBaseCountsMultiSample > /tmp/getbasecounts.log 2>&1 || true; } \
     && grep -q "${GET_BASE_COUNT_MULTISAMPLE_VERSION}" /tmp/getbasecounts.log \
-    && samtools > /tmp/samtools.log 2>&1 || true \
+    && { samtools > /tmp/samtools.log 2>&1 || true; } \
+    && { annotate_variation.pl --help > /tmp/annotate_variation.log 2>&1 || true; } \
+    && grep -q "annotate_variation.pl" /tmp/annotate_variation.log \
     && grep -q "${SAMTOOLS_VERSION}" /tmp/samtools.log \
     && bedtools --version | grep -q 'bedtools' \
     && fastqc --version | grep -q "${FASTQC_VERSION}" \
@@ -279,14 +304,17 @@ RUN ldconfig \
     && snp-pileup --help 2>&1 | grep -q 'vcf file' \
     && ppflag-fixer --help 2>&1 | grep -q 'input file' \
     && /usr/bin/facets-suite/run-facets-wrapper.R --help | grep -q 'COUNTS_FILE' \
-    && java -jar /usr/bin/mutect.jar > /tmp/mutect.log 2>&1 || true \
-    && grep -qi "mutect\\|${MUTECT_VERSION}" /tmp/mutect.log \
-    && java -jar /usr/bin/picard.jar > /tmp/picard.log 2>&1 || true \
-    && grep -qi "picard\\|${PICARD_VERSION}" /tmp/picard.log \
-    && java -jar /usr/bin/gatk.jar > /tmp/gatk.log 2>&1 || true \
-    && grep -qi "gatk\\|${GATK_VERSION}" /tmp/gatk.log \
-    && java -version \
+    && { java -jar /usr/bin/tools/picard/CollectInsertSizeMetrics.jar > /tmp/picard.log 2>&1 || true; } \
+    && grep -qi "${PICARD_VERSION}" /tmp/picard.log \
+    && { java -jar /usr/bin/tools/gatk/GenomeAnalysisTK.jar -T DepthOfCoverage --help > /tmp/gatk_depthofcoverage_help.log 2>&1 || true; } \
+    && grep -qi "DepthOfCoverage\\|USAGE" /tmp/gatk_depthofcoverage_help.log \
+    && java -version 2>&1 | grep -q '"1.8.' \
+    && perl -e 'for my $m (qw(Tie::Autotie Tie::IxHash Statistics::Lite)) { eval "require $m; 1" or die "Missing Perl module $m: $@"; } print "Perl module checks passed.\\n";' \
+    && perl -e 'use Vcf; print "Vcf.pm from vcftools loaded successfully.\\n";' \
+    && test -f "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/AllMetrics_v1.2.r" \
+    && test -f "${SOMATIC_GERMLINE_R_SCRIPT_LIB}/textplot.R" \
     && rm -rf /tmp/* \
-    && echo "All binary tool version checks passed (htstools ${HTSTOOLS_VERSION}, bwa ${BWA_VERSION}, samtools ${SAMTOOLS_VERSION}, fastqc ${FASTQC_VERSION})."
+    && echo "All binary tool version checks passed (htstools ${HTSTOOLS_VERSION}, bwa ${BWA_VERSION}, samtools ${SAMTOOLS_VERSION}, fastqc ${FASTQC_VERSION})." \
+    && echo "vcftools and Vcf.pm successfully installed and verified."
 
 CMD ["/bin/bash"]
