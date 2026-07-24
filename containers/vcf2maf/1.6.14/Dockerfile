@@ -166,8 +166,8 @@ COPY --from=vcf2maf_builder /usr/local/bin/bgzip    /usr/local/bin/bgzip
 COPY --from=vcf2maf_builder /usr/local/lib/libhts.so* /usr/local/lib/
 COPY --from=vcf2maf_builder /usr/local/lib/perl5    /usr/local/lib/perl5
 COPY --from=vcf2maf_builder /usr/local/share/perl5  /usr/local/share/perl5
-COPY --from=vep_first_builder /usr/local/vep/        "/usr/local/vep/${VEP_EIGHTYSIX}"
-COPY --from=vep_second_builder /usr/local/vep/       "/usr/local/vep/${VEP_EIGHTYEIGHT}"
+COPY --from=vep_first_builder /usr/local/vep/        "/usr/local/vep/vep${VEP_EIGHTYSIX}"
+COPY --from=vep_second_builder /usr/local/vep/       "/usr/local/vep/vep${VEP_EIGHTYEIGHT}"
 COPY --from=vcf2maf_builder /usr/local/vcf2maf            /usr/local/vcf2maf
 
 ENV PATH="/usr/local/bin:${PATH}"
