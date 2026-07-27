@@ -192,8 +192,10 @@ RUN set -eux \
     && maf2vcf.pl --help >/dev/null \
     && /bin/bash -c "/usr/local/vep/${VEP_EIGHTYSIX}/variant_effect_predictor.pl --help" >/dev/null \
     && /bin/bash -c "/usr/local/vep/${VEP_EIGHTYEIGHT}/variant_effect_predictor.pl --help" >/dev/null \
-    && /bin/bash -c "/usr/local/vep/vep86 --help" >/dev/null \
-    && /bin/bash -c "/usr/local/vep/vep88 --help" >/dev/null \
+    && /bin/bash -c "/usr/local/bin/vep86 --help" >/dev/null \
+    && /bin/bash -c "/usr/local/bin/vep88 --help" >/dev/null \
+    && /bin/bash -c "/usr/local/bin/vep --help" >/dev/null \
+    && /bin/bash -c "/usr/local/bin/variant_effect_predictor.pl --help" >/dev/null \
     && bcftools --version >/dev/null \
     && samtools --version >/dev/null \
     && perl -e 'for my $m (qw( \
