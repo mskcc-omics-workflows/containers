@@ -5,7 +5,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="John Orgera (orgeraj@mskcc.org), Nikhil Kumar (kumarn1@mskcc.org)" \
       org.opencontainers.image.created="2026-08-12T21:00:00Z" \
       imageprivacy="False" \
-      org.opencontainers.image.version="1.6.0" \
+      org.opencontainers.image.version="1.6.1" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.source="https://github.com/mskcc-omics-workflows/containers/containers/neoantigen-utils-base/" \
       org.opencontainers.image.url="https://github.com/mskcc/neoantigen-utils" \
@@ -16,7 +16,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 ENV NEOSV_TAG=0.0.4-mskv1
 ENV MUTALYZER_TAG=3.1.1-mskv1
-ENV NEOANTIGEN_UTILS_TAG=1.6.0
+ENV NEOANTIGEN_UTILS_TAG=1.6.1
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
