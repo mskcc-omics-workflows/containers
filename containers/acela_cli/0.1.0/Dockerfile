@@ -14,7 +14,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.description="Container for acela-cli ${ACELA_CLI_VERSION}"
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y git ca-certificates \
+    && apt-get install --no-install-recommends -y git ca-certificates procps \
     && git clone --branch v${ACELA_CLI_VERSION} --depth 1 https://github.com/mskcc/acela-cli.git /tmp/acela-cli \
     && pip install --no-cache-dir /tmp/acela-cli \
     && rm -rf /tmp/acela-cli \
