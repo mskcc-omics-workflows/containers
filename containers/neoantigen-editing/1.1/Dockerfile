@@ -6,21 +6,21 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.created="2025-08-21T11:07:00Z" \
       imageprivacy="False" \
       org.opencontainers.image.licenses="ACRRI_TERMS_OF_USE" \
-      org.opencontainers.image.version="1.3" \
-      org.opencontainers.image.source="https://github.com/mskcc/NeoantigenEditing" \
-      org.opencontainers.image.url="https://github.com/mskcc-omics-workflows/containers/containers/NeoantigenEditing/" \
+      org.opencontainers.image.version="1.1" \
+      org.opencontainers.image.source="https://github.com/LukszaLab/NeoantigenEditing" \
+      org.opencontainers.image.url="https://github.com/mskcc-omics-workflows/containers/tree/main/containers/neoantigen-editing/" \
       org.opencontainers.image.title="neoantigen-editing" \
       org.opencontainers.image.description="Tools for computing neoantigen qualities and for performing clone composition predictions."
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV NEOANTIGEN_EDITING_TAG 1.3
-ARG TARGETPLATFORM
+ENV NEOANTIGEN_EDITING_TAG 6877bf296ce96f357c101f91a6d8e123742eb8a6
 
 RUN apt-get update -y \
       # Install packages
       && apt-get install -y --no-install-recommends  python3 python3-pip git make build-essential ncbi-blast+ python3-pandas python3-matplotlib python3-scipy python3-numpy python3-biopython \
       # Install neoantigenEditing
-      && git clone --branch ${NEOANTIGEN_EDITING_TAG} https://github.com/mskcc/NeoantigenEditing /tmp/NeoantigenEditing \
+      && git clone https://github.com/LukszaLab/NeoantigenEditing /tmp/NeoantigenEditing \
+      && git -C /tmp/NeoantigenEditing checkout ${NEOANTIGEN_EDITING_TAG} \
       && cp -r /tmp/NeoantigenEditing/ /usr/bin \
       # Clean up
       && rm -r /tmp/NeoantigenEditing \
