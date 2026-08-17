@@ -29,6 +29,7 @@ RUN apt-get update \
     # Install build dependencies
     && apt-get install --no-install-recommends -y \
     build-essential \
+    procps \
     cmake \
     libncurses5-dev \
     libncurses-dev \
