@@ -16,7 +16,8 @@ LABEL org.opencontainers.image.created="2020-12-16T15:55:35Z" \
 
 # Set the working directory in the container
 WORKDIR /app
-RUN apt-get update -qq && apt-get install -y --no-install-recommends procps \
+RUN apt-get update -qq \
+    && apt-get install -y --no-install-recommends procps
 # Copy the current directory contents into the container at /app
 COPY . /app
 
