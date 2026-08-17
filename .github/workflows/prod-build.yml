@@ -156,7 +156,7 @@ jobs:
         run: |
           docker pull ${{ steps.docker_tag_jfrog.outputs.tag }} || true
 
-      - name: Smoke test: check for ps
+      - name: "Smoke test: check for ps"
         run: |
           IMAGE=${{ steps.docker_tag_jfrog.outputs.tag }}
           docker run --rm "$IMAGE" sh -c 'command -v ps >/dev/null 2>&1 || (echo "ps not found" >&2; exit 1)'
@@ -262,7 +262,7 @@ jobs:
         run: |
           docker pull ${{ steps.docker_tag_ghcr.outputs.tag }} || true
 
-      - name: Smoke test: check for ps
+      - name: "Smoke test: check for ps"
         if: steps.check_private.outputs.private_image == 'false'
         run: |
           IMAGE=${{ steps.docker_tag_ghcr.outputs.tag }}
