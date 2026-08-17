@@ -159,7 +159,7 @@ jobs:
       - name: Smoke test: check for ps
         run: |
           IMAGE=${{ steps.docker_tag_jfrog.outputs.tag }}
-          docker run --rm "$IMAGE" sh -c 'command -v ps >/dev/null 2>&1 || (echo "ps not found" >&2; exit 1)'
+          docker run --rm "$IMAGE" sh -c 'command -v ps >/dev/null 2>&1 || (echo ps not found >&2; exit 1)'
 
   build-amd64-ghcr:
     name: build-amd64-ghcr
@@ -266,7 +266,7 @@ jobs:
         if: steps.check_private.outputs.private_image == 'false'
         run: |
           IMAGE=${{ steps.docker_tag_ghcr.outputs.tag }}
-          docker run --rm "$IMAGE" sh -c 'command -v ps >/dev/null 2>&1 || (echo "ps not found" >&2; exit 1)'
+          docker run --rm "$IMAGE" sh -c 'command -v ps >/dev/null 2>&1 || (echo ps not found >&2; exit 1)'
 
       - name: Skip GHCR manifest for private image
         if: steps.check_private.outputs.private_image == 'true'
