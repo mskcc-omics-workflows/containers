@@ -64,7 +64,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       # Hadolint linting
       - name: Hadolint
         uses: hadolint/hadolint-action@v3.1.0
@@ -153,6 +152,15 @@ jobs:
         run: |
           echo "Verifying multi-arch manifest for ${{ steps.docker_repo_name.outputs.name }}:${{ steps.docker_repo_version.outputs.version }}"
           docker buildx imagetools inspect ${{ steps.docker_tag.outputs.tag }}
+
+      - name: Pull image (for smoke test)
+        run: |
+          docker pull ${{ steps.docker_tag.outputs.tag }} || true
+
+      - name: Smoke test: check for ps
+        run: |
+          IMAGE=${{ steps.docker_tag.outputs.tag }}
+          docker run --rm "$IMAGE" sh -c 'command -v ps >/dev/null 2>&1 || (echo "ps not found" >&2; exit 1)'
 
   confirm-pass:
     runs-on: ubuntu-latest

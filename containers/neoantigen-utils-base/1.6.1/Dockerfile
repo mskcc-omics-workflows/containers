@@ -114,6 +114,7 @@ RUN apt-get update \
     uuid-runtime \
     ca-certificates \
     tabix \
+    procps \
     perl \
     bzip2 \
     git \
