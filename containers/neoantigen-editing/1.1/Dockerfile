@@ -14,12 +14,6 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NEOANTIGEN_EDITING_TAG 6877bf296ce96f357c101f91a6d8e123742eb8a6
-# `cp -r /tmp/NeoantigenEditing/ /usr/bin` (below) copies the whole checkout
-# in as /usr/bin/NeoantigenEditing/, not flattened onto /usr/bin, so the
-# scripts are never actually on PATH; the checkout is also not executable.
-# Modules invoke these scripts as bare commands (e.g. compute_fitness.py,
-# align_neoantigens_to_IEDB.py), so put the checkout's directory on PATH
-# and make its scripts executable instead of relying on /usr/bin placement.
 ENV PATH="/usr/bin/NeoantigenEditing:${PATH}"
 
 RUN apt-get update -y \
