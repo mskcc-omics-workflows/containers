@@ -13,11 +13,6 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
 	org.opencontainers.image.description="GetBaseCountsMultiSample 1.2.5, built on Ubuntu 16.04 and packaged into a slim Ubuntu 24.04 runtime image."
 
 # BUILD STAGE
-# A separate, unrelated base (ubuntu:16.04) from `base` above -- kept on
-# 16.04 to match the toolchain this code (c++03, vendored bamtools-master)
-# has always built against. Labels don't carry across unrelated FROMs, which
-# is why the final stage below re-enters `FROM base` instead of building on
-# top of this stage.
 FROM ubuntu:16.04 AS builder
 
 ARG GBCMS_VERSION=1.2.5
