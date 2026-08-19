@@ -14,6 +14,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NEOANTIGEN_EDITING_TAG 6877bf296ce96f357c101f91a6d8e123742eb8a6
+ENV PATH="/usr/bin/NeoantigenEditing:${PATH}"
 
 RUN apt-get update -y \
       # Install packages
@@ -22,6 +23,7 @@ RUN apt-get update -y \
       && git clone https://github.com/LukszaLab/NeoantigenEditing /tmp/NeoantigenEditing \
       && git -C /tmp/NeoantigenEditing checkout ${NEOANTIGEN_EDITING_TAG} \
       && cp -r /tmp/NeoantigenEditing/ /usr/bin \
+      && chmod +x /usr/bin/NeoantigenEditing/*.py \
       # Clean up
       && rm -r /tmp/NeoantigenEditing \
       && apt-get clean \
