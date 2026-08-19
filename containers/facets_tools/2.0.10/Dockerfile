@@ -75,11 +75,7 @@ RUN ./configure && make && make install && cp libhts.so* /usr/lib
 FROM htslib_builder AS htstools_builder
 WORKDIR "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}"
 # mskcc/htstools snp-pileup.cpp under-allocates data[i] with sizeof(mplp_aux_t*)
-# (pointer size) instead of sizeof(mplp_aux_t) (the actual struct size), causing
-# a heap buffer overflow on every real pileup run. On the previous Debian
-# 9 / glibc 2.24 base this corruption went undetected; glibc's heap
-# consistency checks on this Ubuntu 22.04 base now catch it and abort with
-# "double free or corruption (out)" / "realloc(): invalid old size".
+# causing a heap buffer overflow on every real pileup run. 
 # Upstream fix (open, unmerged): https://github.com/mskcc/htstools/pull/9
 RUN sed -i 's/calloc(1, sizeof(mplp_aux_t\*))/calloc(1, sizeof(mplp_aux_t))/' snp-pileup.cpp \
     && grep -q 'calloc(1, sizeof(mplp_aux_t))' snp-pileup.cpp \
