@@ -161,7 +161,12 @@ RUN ./configure && make && make install && cp libhts.so* /usr/lib
 FROM htslib_builder AS htstools_builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 WORKDIR "/tmp/htstools-snp_pileup_${HTSTOOLS_VERSION}"
-RUN g++ -std=c++11 snp-pileup.cpp -lhts -o snp-pileup \
+# mskcc/htstools snp-pileup.cpp under-allocates data[i] with sizeof(mplp_aux_t*)
+# causing a heap buffer overflow on every real pileup run.
+# Upstream fix (open, unmerged): https://github.com/mskcc/htstools/pull/9
+RUN sed -i 's/calloc(1, sizeof(mplp_aux_t\*))/calloc(1, sizeof(mplp_aux_t))/' snp-pileup.cpp \
+    && grep -q 'calloc(1, sizeof(mplp_aux_t))' snp-pileup.cpp \
+    && g++ -std=c++11 snp-pileup.cpp -lhts -o snp-pileup \
     && g++ -std=c++11 ppflag-fixer.cpp -lhts -o ppflag-fixer
 
 FROM htstools_builder AS pctgcdata_builder
