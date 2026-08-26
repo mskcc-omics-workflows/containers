@@ -86,4 +86,4 @@ RUN pip install --no-cache-dir /app/dist/*.whl \
 # Verify installation
 RUN python -c "from gbcms import _rs; import gbcms; print(f'gbcms {gbcms.__version__} ready')"
 
-ENTRYPOINT ["gbcms"]
+CMD ["gbcms", "--help"]
