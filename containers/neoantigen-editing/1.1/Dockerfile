@@ -13,14 +13,14 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.description="Tools for computing neoantigen qualities and for performing clone composition predictions."
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV NEOANTIGEN_EDITING_TAG 6877bf296ce96f357c101f91a6d8e123742eb8a6
+ENV NEOANTIGEN_EDITING_TAG 15bfb99bab8a4ca0e9303867f4508520e220fd3e
 ENV PATH="/usr/bin/NeoantigenEditing:${PATH}"
 
 RUN apt-get update -y \
       # Install packages
       && apt-get install -y --no-install-recommends  python3 python3-pip git make build-essential ncbi-blast+ python3-pandas python3-matplotlib python3-scipy python3-numpy python3-biopython \
       # Install neoantigenEditing
-      && git clone https://github.com/LukszaLab/NeoantigenEditing /tmp/NeoantigenEditing \
+      && git clone https://github.com/LukszaLab/NeoantigenEditing -b neoQual /tmp/NeoantigenEditing \
       && git -C /tmp/NeoantigenEditing checkout ${NEOANTIGEN_EDITING_TAG} \
       && cp -r /tmp/NeoantigenEditing/ /usr/bin \
       && chmod +x /usr/bin/NeoantigenEditing/*.py \
