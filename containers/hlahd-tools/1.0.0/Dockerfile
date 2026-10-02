@@ -34,12 +34,9 @@ RUN mamba install -y -c conda-forge -c bioconda \
         pip \
     && mamba clean -afy
 
-# hla-annotate is private, so cloning it needs a token (fine-grained PAT, read-only,
-# scoped to just this repo) passed as a BuildKit secret — never baked into the image.
 # Tests run at build time so a broken release fails the image build, not a pipeline run.
-RUN --mount=type=secret,id=MSK_GH_TOKEN \
-    git clone --depth 1 --branch ${HLA_ANNOTATE_TAG} \
-        "https://x-access-token:$(cat /run/secrets/MSK_GH_TOKEN)@github.com/mskcc/hla-annotate.git" \
+RUN git clone --depth 1 --branch ${HLA_ANNOTATE_TAG} \
+        https://github.com/mskcc/hla-annotate.git \
         /tmp/hla-annotate \
     && pip install --no-cache-dir -e '/tmp/hla-annotate[dev]' \
     && pytest /tmp/hla-annotate \
