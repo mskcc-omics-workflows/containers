@@ -1,63 +1,59 @@
-################## BASE IMAGE ######################
+FROM ubuntu:24.04 AS base
 
-FROM ubuntu:16.04
-
-################## ARGUMENTS########################
-
-ARG BUILD_DATE="2024-12-12T15:08:40Z"
-ARG BUILD_VERSION
-ARG LICENSE="Apache-2.0"
-ARG GBCMS_VERSION=1.2.5
-ARG VCS_REF
-################## METADATA ########################
-
-LABEL org.opencontainers.image.vendor="MSKCC"
-LABEL org.opencontainers.image.authors="Ronak Shah (shahr2@mskcc.org)"
-
-LABEL org.opencontainers.image.title="GBCMS"\
-	org.opencontainers.image.version.gbcms=${GBCMS_VERSION} \
+# Labels
+LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
+	org.opencontainers.image.authors="Ronak Shah (shahr2@mskcc.org), Nikhil Kumar (kumarn1@mskcc.org)" \
+	org.opencontainers.image.created="2026-08-18T20:54:45Z" \
+	imageprivacy="False" \
+	org.opencontainers.image.version="1.2.5" \
+	org.opencontainers.image.licenses="Apache-2.0" \
+	org.opencontainers.image.source="https://github.com/msk-access/GetBaseCountsMultiSample/releases/" \
 	org.opencontainers.image.url="https://github.com/mskcc/GetBaseCountsMultiSample" \
-	org.opencontainers.image.created=${BUILD_DATE} \
-	org.opencontainers.image.version=${BUILD_VERSION} \
-	org.opencontainers.image.revision=${VCS_REF} \
-	org.opencontainers.image.licenses=${LICENSE} \
-	org.opencontainers.image.source="https://github.com/msk-access/GetBaseCountsMultiSample/releases/" \ 
-	org.opencontainers.image.description="This container uses Ubuntu 16.04 as the base image to build GetBaseCountsMultiSample version ${GBCMS_VERSION}"
+	org.opencontainers.image.title="GBCMS" \
+	org.opencontainers.image.description="GetBaseCountsMultiSample 1.2.5, built on Ubuntu 16.04 and packaged into a slim Ubuntu 24.04 runtime image."
 
-################## INSTALL ##########################
+# BUILD STAGE
+FROM ubuntu:16.04 AS builder
+
+ARG GBCMS_VERSION=1.2.5
 
 WORKDIR /usr/src
 
 RUN apt-get update && \
-	apt-get --no-install-recommends install -y \
+	apt-get install --no-install-recommends -y \
 	wget ca-certificates openssl gcc g++ make zlib1g-dev cmake libjsoncpp-dev && \
-	apt-get clean autoclean && \
-	apt-get autoremove -y && \
 	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-
-WORKDIR /usr/src
-# Download and extract the tarball
 RUN wget -q --no-check-certificate "https://github.com/msk-access/GetBaseCountsMultiSample/archive/refs/tags/${GBCMS_VERSION}.tar.gz" && \
-	tar -xzvf ${GBCMS_VERSION}.tar.gz && \
-	rm ${GBCMS_VERSION}.tar.gz
+	tar -xzf "${GBCMS_VERSION}.tar.gz" && \
+	rm "${GBCMS_VERSION}.tar.gz"
 
 WORKDIR /usr/src/GetBaseCountsMultiSample-${GBCMS_VERSION}/bamtools-master
-
-# Clean, build, and install bamtools
-RUN rm -r build/ && \
-	mkdir build
+RUN rm -rf build && mkdir build
 
 WORKDIR /usr/src/GetBaseCountsMultiSample-${GBCMS_VERSION}/bamtools-master/build
-
 RUN cmake -DCMAKE_CXX_FLAGS=-std=c++03 .. && \
-	make && \
+	make -j"$(nproc)" && \
 	make install && \
 	cp ../lib/libbamtools.so.2.3.0 /usr/lib/
-	
-# Switch to the main GetBaseCountsMultiSample directory
+
 WORKDIR /usr/src/GetBaseCountsMultiSample-${GBCMS_VERSION}
-# Build GetBaseCountsMultiSample
-RUN make && \
+RUN make -j"$(nproc)" && \
 	cp GetBaseCountsMultiSample /usr/local/bin/
-	
+
+# FINAL IMAGE
+FROM base
+
+RUN apt-get update && \
+	apt-get install --no-install-recommends -y \
+	bash \
+	procps \
+	libgomp1 \
+	libstdc++6 \
+	zlib1g && \
+	apt-get clean && \
+	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+COPY --from=builder /usr/local/bin/GetBaseCountsMultiSample /usr/local/bin/GetBaseCountsMultiSample
+COPY --from=builder /usr/lib/libbamtools.so.2.3.0 /usr/lib/libbamtools.so.2.3.0
+RUN ldconfig
