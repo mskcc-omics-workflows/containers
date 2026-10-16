@@ -13,7 +13,7 @@ LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.description="Tools for computing neoantigen qualities and for performing clone composition predictions."
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV NEOANTIGEN_EDITING_TAG 15bfb99bab8a4ca0e9303867f4508520e220fd3e
+ENV NEOANTIGEN_EDITING_TAG cd97838f6a84a2730b4d690110d1e2b7479dcc90
 ENV PATH="/usr/bin/NeoantigenEditing:${PATH}"
 
 RUN apt-get update -y \
