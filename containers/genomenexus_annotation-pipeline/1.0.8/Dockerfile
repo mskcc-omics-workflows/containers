@@ -1,6 +1,6 @@
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 
-ARG GENOME_NEXUS_ANNOTATION_PIPELINE_VERSION=1.0.7
+ARG GENOME_NEXUS_ANNOTATION_PIPELINE_VERSION=1.0.8
 ARG MAVEN_BUILD_ARGS=-DskipTests
 
 ENV PROJECT_VERSION=${GENOME_NEXUS_ANNOTATION_PIPELINE_VERSION}
@@ -32,14 +32,14 @@ FROM eclipse-temurin:21-jre-jammy
 # Labels
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="John Orgera (orgeraj@mskcc.org)" \
-      org.opencontainers.image.created="2026-06-09T00:00:00Z" \
+      org.opencontainers.image.created="2026-10-16T00:00:00Z" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.version="1.0.7" \
+      org.opencontainers.image.version="1.0.8" \
       imageprivacy="False" \
       org.opencontainers.image.source="https://github.com/mskcc-omics-workflows/containers/containers/genomenexus_annotation-pipeline/" \
       org.opencontainers.image.url="https://github.com/genome-nexus/genome-nexus-annotation-pipeline/" \
       org.opencontainers.image.title="Genome Nexus Annotation Pipeline" \
-      org.opencontainers.image.description="Genome Nexus variant annotation pipeline built from the upstream v1.0.7 release."
+      org.opencontainers.image.description="Genome Nexus variant annotation pipeline built from the upstream v1.0.8 release."
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV GN_HOME=/genome-nexus-annotation-pipeline
