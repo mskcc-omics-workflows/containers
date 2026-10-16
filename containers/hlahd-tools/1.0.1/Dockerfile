@@ -6,16 +6,16 @@ FROM condaforge/miniforge3:25.3.1-0
 # Labels
 LABEL org.opencontainers.image.vendor="MSKCC-OMICS-WORKFLOWS" \
       org.opencontainers.image.authors="John Orgera (orgeraj@mskcc.org)" \
-      org.opencontainers.image.created="2026-08-26T00:00:00Z" \
+      org.opencontainers.image.created="2026-10-16T00:00:00Z" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.version="1.0.1" \
       imageprivacy="False" \
       org.opencontainers.image.source="https://github.com/mskcc-omics-workflows/containers/containers/hlahd-tools/" \
       org.opencontainers.image.url="https://github.com/mskcc-omics-workflows/modules" \
       org.opencontainers.image.title="hlahd-tools" \
       org.opencontainers.image.description="Python + bowtie2/samtools runtime for HLA-HD post-processing modules (e.g. annotate_hlahd), with mskcc/hla-annotate installed."
 
-ENV HLA_ANNOTATE_TAG=v1.0.0
+ENV HLA_ANNOTATE_TAG=v1.0.1
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -41,6 +41,7 @@ RUN git clone --depth 1 --branch ${HLA_ANNOTATE_TAG} \
     && pip install --no-cache-dir -e '/tmp/hla-annotate[dev]' \
     && pytest /tmp/hla-annotate \
     && pip install --no-cache-dir --no-deps --force-reinstall /tmp/hla-annotate \
+    && annotate_hlahd --version | grep -qF "${HLA_ANNOTATE_TAG#v}" \
     && rm -rf /tmp/hla-annotate
 
 # matplotlib/fontconfig write caches on first use; $HOME is not writable under
